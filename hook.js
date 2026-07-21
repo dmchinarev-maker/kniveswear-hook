@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.9.3";
+  const VERSION = "0.9.4";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -46,7 +46,9 @@
 
   /* РЕДКИЕ/ЭПИКИ — «ОРЕОЛ»: ни одной линии, мягкое свечение грейда
      + световая полоса, разгорающаяся под фото */
-  .kw-card{transition:transform .22s ease, box-shadow .35s ease}
+  /* все карточки с грейдом удлинены вниз — цена не липнет к краю */
+  .kw-card{transition:transform .22s ease, box-shadow .35s ease;
+    padding-bottom:26px;background:#fff}
   .kw-card:hover{box-shadow:0 6px 40px var(--kw-glow), 0 2px 14px var(--kw-glow)}
   .kw-card .t-store__card__imgwrapper::before{content:"";position:absolute;
     left:0;right:0;bottom:0;height:3px;z-index:3;pointer-events:none;
@@ -54,10 +56,7 @@
     transform:scaleX(0);transition:transform .4s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .t-store__card__imgwrapper::before{transform:scaleX(1)}
 
-  /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру.
-     Сама карточка удлинена вниз (padding) — цена не липнет к её краю,
-     белое тело доходит до рамки */
-  .kw-card[data-kw-done="legend"]{padding-bottom:26px;background:#fff}
+  /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру */
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
   .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
     inset:-2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
