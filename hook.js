@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.4.2";
+  const VERSION = "0.5.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -94,9 +94,9 @@
     font-family:'TildaSans',Arial,sans-serif;color:#111}
   .kw-drop i{width:7px;height:7px;background:#f07800;transform:rotate(45deg);flex:none}
   .kw-drop b{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
-  .kw-drop time{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
-    letter-spacing:.06em;white-space:nowrap}
-  .kw-drop small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#888}
+  .kw-drop time{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;
+    letter-spacing:.04em;white-space:nowrap;color:#111}
+  .kw-drop time em{font-style:normal;color:#888;font-size:13px;margin:0 2px}
   @media (max-width:560px){.kw-drop{gap:6px 14px}.kw-drop b{font-size:11.5px}}
 
   /* тач-устройства: ховера нет — лейбл и цвет имени видны постоянно */
@@ -170,23 +170,32 @@
     const bar = document.createElement("div");
     bar.id = "kw-drop";
     bar.className = "kw-drop";
-    bar.innerHTML = `<i></i><b></b><time></time><small>дней · часы : мин : сек</small>`;
+    bar.innerHTML = `<i></i><b></b><time></time>`;
     rec.parentNode.insertBefore(bar, rec);
-    const title = bar.querySelector("b"), t = bar.querySelector("time"),
-          hint = bar.querySelector("small");
+    const title = bar.querySelector("b"), t = bar.querySelector("time");
     const pad = n => String(n).padStart(2, "0");
+    const dayWord = n => {
+      const a = n % 10, b = n % 100;
+      if (b >= 11 && b <= 14) return "дней";
+      if (a === 1) return "день";
+      if (a >= 2 && a <= 4) return "дня";
+      return "дней";
+    };
     function render() {
       let s = Math.floor((DROP.at - Date.now()) / 1000);
       if (s <= 0) {
         title.textContent = DROP.doneTitle;
-        t.textContent = ""; hint.textContent = "";
+        t.textContent = "";
         clearInterval(timerId);
         return;
       }
       title.textContent = DROP.title;
       const d = Math.floor(s / 86400); s %= 86400;
       const h = Math.floor(s / 3600);  s %= 3600;
-      t.textContent = `${d} · ${pad(h)}:${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+      const clock = `${pad(h)}:${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+      t.innerHTML = d > 0
+        ? `${d}<em>${dayWord(d)}</em>${clock}`
+        : clock;
     }
     render();
     const timerId = setInterval(render, 1000);
