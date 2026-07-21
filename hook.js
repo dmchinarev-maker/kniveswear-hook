@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.4.1";
+  const VERSION = "1.4.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -93,9 +93,8 @@
 
   /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру */
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
-  /* рамка-паспарту: лежит на полях фото (12px от боков), не касаясь соседей */
   .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
-    inset:0 12px;padding:2px;pointer-events:none;z-index:3;opacity:0;
+    inset:-2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
     background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
       var(--kw-c) 50%,transparent 75%,var(--kw-c));
     -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
