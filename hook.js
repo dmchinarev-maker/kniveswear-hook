@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.5.0";
+  const VERSION = "0.6.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -42,26 +42,19 @@
   .kw-card{position:relative;transition:transform .22s ease}
   .kw-card:hover{transform:translateY(-3px)}
 
-  /* до ховера карточка полностью стоковая; рамка проявляется на ховере */
-  .kw-card::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
-    border:1px solid var(--kw-c);opacity:0;
-    transition:opacity .25s ease, box-shadow .3s ease}
-  .kw-card:hover::before{opacity:1;
-    box-shadow:0 10px 34px var(--kw-glow), 0 2px 10px var(--kw-glow)}
-
-  /* уголки-визиры — появляются на ховере */
-  .kw-tick{position:absolute;width:14px;height:14px;z-index:4;pointer-events:none;
-    opacity:0;transition:opacity .25s ease, transform .25s ease;transform:scale(.6)}
-  .kw-card:hover .kw-tick{opacity:1;transform:scale(1)}
-  .kw-tick::before{content:"";position:absolute;inset:0;
-    border-top:2px solid var(--kw-c);border-left:2px solid var(--kw-c)}
-  .kw-tick.tl{top:-5px;left:-5px}
-  .kw-tick.tr{top:-5px;right:-5px;transform:scale(.6) rotate(90deg)}
-  .kw-card:hover .kw-tick.tr{transform:scale(1) rotate(90deg)}
-  .kw-tick.br{bottom:-5px;right:-5px;transform:scale(.6) rotate(180deg)}
-  .kw-card:hover .kw-tick.br{transform:scale(1) rotate(180deg)}
-  .kw-tick.bl{bottom:-5px;left:-5px;transform:scale(.6) rotate(270deg)}
-  .kw-card:hover .kw-tick.bl{transform:scale(1) rotate(270deg)}
+  /* ЖИВАЯ КРОМКА: до ховера карточка стоковая; на ховере по периметру
+     бежит градиент цвета грейда (волосяная линия через mask-трюк) */
+  @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
+  .kw-card::before{content:"";position:absolute;inset:-2px;padding:2px;
+    pointer-events:none;z-index:3;opacity:0;
+    background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
+      var(--kw-c) 50%,transparent 75%,var(--kw-c));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    transition:opacity .3s ease}
+  .kw-card:hover::before{opacity:1;animation:kwSpin 2.8s linear infinite}
+  @keyframes kwSpin{to{--kw-a:360deg}}
+  .kw-card:hover{filter:drop-shadow(0 10px 30px var(--kw-glow))}
 
   /* имя вещи — чёрное в покое, цвет грейда на ховере */
   .kw-card .t-store__card__title,
@@ -108,8 +101,8 @@
   }
 
   @media (prefers-reduced-motion:reduce){
-    .kw-card,.kw-card::before,.kw-tick,.kw-badge{transition:none!important}
-    .kw-card .t-store__card__imgwrapper::after{animation:none!important}
+    .kw-card,.kw-card::before,.kw-badge{transition:none!important}
+    .kw-card::before,.kw-card .t-store__card__imgwrapper::after{animation:none!important}
   }`;
 
   function injectStyles() {
@@ -148,11 +141,6 @@
     badge.className = "kw-badge";
     badge.textContent = r.label;
     card.appendChild(badge);
-    for (const pos of ["tl", "tr", "bl", "br"]) {
-      const t = document.createElement("span");
-      t.className = "kw-tick " + pos;
-      card.appendChild(t);
-    }
   }
 
   function scan() {
