@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.0.1";
+  const VERSION = "1.0.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -64,8 +64,8 @@
   .kw-srow{display:grid;grid-template-columns:118px 1fr 34px;gap:10px;align-items:center;margin-bottom:9px}
   .kw-srow .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#555}
   .kw-srow .v{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-  .kw-strack{height:4px;background:#f0f0f0;overflow:hidden}
-  .kw-sfill{height:100%;background:#111;width:var(--w);
+  .kw-strack{display:block;height:4px;background:#f0f0f0;overflow:hidden}
+  .kw-sfill{display:block;height:100%;background:#111;width:var(--w);
     animation:kwGrow .9s cubic-bezier(.22,1,.36,1)}
   @keyframes kwGrow{from{width:0}}
   .kw-pass{padding:4px 18px 12px}
