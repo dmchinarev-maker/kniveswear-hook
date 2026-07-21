@@ -8,7 +8,14 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.2.0";
+  const VERSION = "0.3.0";
+
+  /* ==== ДРОП: таймер над каталогом ==== */
+  const DROP = {
+    title: "Новый дроп — 25 августа",
+    doneTitle: "Новый дроп — уже в продаже",
+    at: new Date("2026-08-25T00:00:00+03:00"),   // полночь по Москве
+  };
 
   /* ==== ПРАВИЛА РЕДКОСТИ: подстрока названия (lowercase) → грейд ====
    * Первое совпадение побеждает. Нет совпадения — карточка остаётся чистой.
@@ -73,6 +80,18 @@
   .kw-card[data-kw-done="legend"]::before{opacity:.45;
     box-shadow:0 4px 22px rgba(240,120,0,.10)}
 
+  /* полоса дропа: тонкие линии, шрифт сайта, табличные цифры */
+  .kw-drop{max-width:1160px;margin:28px auto 6px;padding:13px 20px;
+    display:flex;align-items:center;justify-content:center;gap:10px 22px;flex-wrap:wrap;
+    border-top:1px solid #111;border-bottom:1px solid #111;background:#fff;
+    font-family:'TildaSans',Arial,sans-serif;color:#111}
+  .kw-drop i{width:7px;height:7px;background:#f07800;transform:rotate(45deg);flex:none}
+  .kw-drop b{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+  .kw-drop time{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
+    letter-spacing:.06em;white-space:nowrap}
+  .kw-drop small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#888}
+  @media (max-width:560px){.kw-drop{gap:6px 14px}.kw-drop b{font-size:11.5px}}
+
   @media (prefers-reduced-motion:reduce){
     .kw-card,.kw-card::before,.kw-tick,.kw-badge{transition:none!important}
   }`;
@@ -123,6 +142,38 @@
   function scan() {
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
+    mountDropBar();
+  }
+
+  /* ==== таймер дропа: полоса перед блоком каталога ==== */
+  function mountDropBar() {
+    if (document.getElementById("kw-drop")) return;
+    const store = document.querySelector(".t-store");
+    if (!store) return;                       // на страницах без каталога не показываем
+    const rec = store.closest('[id^="rec"]') || store;
+    const bar = document.createElement("div");
+    bar.id = "kw-drop";
+    bar.className = "kw-drop";
+    bar.innerHTML = `<i></i><b></b><time></time><small>дней · часы : мин : сек</small>`;
+    rec.parentNode.insertBefore(bar, rec);
+    const title = bar.querySelector("b"), t = bar.querySelector("time"),
+          hint = bar.querySelector("small");
+    const pad = n => String(n).padStart(2, "0");
+    function render() {
+      let s = Math.floor((DROP.at - Date.now()) / 1000);
+      if (s <= 0) {
+        title.textContent = DROP.doneTitle;
+        t.textContent = ""; hint.textContent = "";
+        clearInterval(timerId);
+        return;
+      }
+      title.textContent = DROP.title;
+      const d = Math.floor(s / 86400); s %= 86400;
+      const h = Math.floor(s / 3600);  s %= 3600;
+      t.textContent = `${d} · ${pad(h)}:${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+    }
+    render();
+    const timerId = setInterval(render, 1000);
   }
 
   function start() {
