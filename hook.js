@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.4.0";
+  const VERSION = "0.4.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -98,6 +98,14 @@
     letter-spacing:.06em;white-space:nowrap}
   .kw-drop small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#888}
   @media (max-width:560px){.kw-drop{gap:6px 14px}.kw-drop b{font-size:11.5px}}
+
+  /* тач-устройства: ховера нет — лейбл и цвет имени видны постоянно */
+  @media (hover:none){
+    .kw-badge{opacity:1;transform:none}
+    .kw-card .t-store__card__title,
+    .kw-card .js-store-prod-name{color:var(--kw-c)!important}
+    .kw-card::before{opacity:.5}
+  }
 
   @media (prefers-reduced-motion:reduce){
     .kw-card,.kw-card::before,.kw-tick,.kw-badge{transition:none!important}
