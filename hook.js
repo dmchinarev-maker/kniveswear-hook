@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.2.0";
+  const VERSION = "1.2.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -410,10 +410,12 @@
     if (old) old.remove();
 
     const priceEl = info.querySelector(".js-product-price, .t-store__prod-popup__price-value");
-    const price = priceEl ? priceEl.textContent.replace(/[^\d]/g, "") : "";
-    const imgEl = document.querySelector(
-      ".t-store__prod-popup__slider img, .t-store__prod-popup img, .t-slds__img img");
-    const img = imgEl ? (imgEl.getAttribute("data-original") || imgEl.src) : null;
+    // берём ТОЛЬКО первое число — рядом может стоять зачёркнутая старая цена
+    const priceMatch = priceEl ? priceEl.textContent.match(/\d[\d\s ]*/) : null;
+    const price = priceMatch ? priceMatch[0].replace(/\D/g, "") : "";
+    // картинки в галерее Тильды — фоновые дивы; надёжнее взять её же og:image
+    const ogImg = document.querySelector('meta[property="og:image"]');
+    const img = ogImg && ogImg.content ? ogImg.content : null;
     const descEl = info.querySelector(".t-store__prod-popup__text");
     const st = statsFor(name);
     const desc = (descEl && descEl.textContent.trim()) ||
@@ -447,7 +449,7 @@
         document.title = name + " — купить в интернет-магазине Knives";
       const md = document.querySelector('meta[name="description"]');
       if (md && !md.content.trim())
-        md.content = (name + ": " + desc).slice(0, 158);
+        md.content = (desc.indexOf(name) === 0 ? desc : name + ": " + desc).slice(0, 158);
     }
   }
 
