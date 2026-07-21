@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.9.0";
+  const VERSION = "0.9.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -32,13 +32,12 @@
   ];
 
   const RAR = {
-    common: { label: "Обычная",      c: "#9d9d9d", glow: "rgba(0,0,0,.10)" },
     rare:   { label: "Редкая",       c: "#0070dd", glow: "rgba(0,112,221,.16)" },
     epic:   { label: "Эпическая",    c: "#a335ee", glow: "rgba(163,53,238,.16)" },
     legend: { label: "Легендарная",  c: "#f07800", glow: "rgba(240,120,0,.18)" },
   };
   // всё, что не совпало ни с одним правилом, получает этот грейд
-  const DEFAULT_RARITY = "common";
+  const DEFAULT_RARITY = "rare";
 
   /* ==== СТИЛИ: тонко, светло, в шрифте сайта ==== */
   const css = `
