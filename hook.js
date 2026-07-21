@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.7.0";
+  const VERSION = "0.7.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -70,20 +70,15 @@
   .kw-card:hover .t-store__card__title,
   .kw-card:hover .js-store-prod-name{color:var(--kw-c)!important}
 
-  /* лейбл: скрыт в покое, въезжает на ховере.
-     Редкие/эпики — верхний левый угол; легендарка — врезан в верхний кант */
-  .kw-badge{position:absolute;top:10px;left:10px;z-index:5;pointer-events:none;
+  /* лейбл: у ВСЕХ грейдов — белая плашка сверху по центру, врезанная
+     в верхний край (у легендарки она разрезает кант); скрыт до ховера */
+  .kw-badge{position:absolute;top:-9px;left:50%;z-index:5;pointer-events:none;
     font-family:'TildaSans',Arial,sans-serif;font-size:10px;font-weight:600;
-    line-height:1;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--kw-c);background:transparent;
-    border:1px solid var(--kw-c);padding:5px 8px 4px;
-    opacity:0;transform:translateY(-6px);
+    line-height:1;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--kw-c);background:#fff;padding:3px 12px;
+    opacity:0;transform:translate(-50%,4px);white-space:nowrap;
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
-  .kw-card:hover .kw-badge{opacity:1;transform:none}
-  .kw-card[data-kw-done="legend"] .kw-badge{top:-9px;left:50%;border:0;
-    background:#fff;padding:3px 12px;letter-spacing:.16em;
-    transform:translate(-50%,4px)}
-  .kw-card[data-kw-done="legend"]:hover .kw-badge{transform:translate(-50%,0)}
+  .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
 
   /* блик света по фото на ховере */
   .kw-card .t-store__card__imgwrapper{position:relative;overflow:hidden}
@@ -107,8 +102,7 @@
 
   /* тач-устройства: ховера нет — всё видно постоянно */
   @media (hover:none){
-    .kw-badge{opacity:1;transform:none}
-    .kw-card[data-kw-done="legend"] .kw-badge{transform:translate(-50%,0)}
+    .kw-badge{opacity:1;transform:translate(-50%,0)}
     .kw-card .t-store__card__title,
     .kw-card .js-store-prod-name{color:var(--kw-c)!important}
     .kw-card .t-store__card__imgwrapper::before{transform:scaleX(1)}
