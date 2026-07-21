@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.4.1";
+  const VERSION = "0.4.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -73,7 +73,7 @@
   .kw-badge{position:absolute;top:10px;left:10px;z-index:4;pointer-events:none;
     font-family:'TildaSans',Arial,sans-serif;font-size:10px;font-weight:600;
     line-height:1;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--kw-c);background:rgba(255,255,255,.94);
+    color:var(--kw-c);background:transparent;
     border:1px solid var(--kw-c);padding:5px 8px 4px;
     opacity:0;transform:translateY(-6px);
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
