@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.6.0";
+  const VERSION = "0.7.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -42,19 +42,27 @@
   .kw-card{position:relative;transition:transform .22s ease}
   .kw-card:hover{transform:translateY(-3px)}
 
-  /* ЖИВАЯ КРОМКА: до ховера карточка стоковая; на ховере по периметру
-     бежит градиент цвета грейда (волосяная линия через mask-трюк) */
-  @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
-  .kw-card::before{content:"";position:absolute;inset:-2px;padding:2px;
-    pointer-events:none;z-index:3;opacity:0;
-    background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
-      var(--kw-c) 50%,transparent 75%,var(--kw-c));
-    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-    -webkit-mask-composite:xor;mask-composite:exclude;
-    transition:opacity .3s ease}
-  .kw-card:hover::before{opacity:1;animation:kwSpin 2.8s linear infinite}
-  @keyframes kwSpin{to{--kw-a:360deg}}
-  .kw-card:hover{filter:drop-shadow(0 10px 30px var(--kw-glow))}
+  /* РЕДКИЕ/ЭПИКИ — «ОРЕОЛ»: ни одной линии, мягкое свечение грейда
+     + световая полоса, разгорающаяся под фото */
+  .kw-card{transition:transform .22s ease, box-shadow .35s ease}
+  .kw-card:hover{box-shadow:0 6px 40px var(--kw-glow), 0 2px 14px var(--kw-glow)}
+  .kw-card .t-store__card__imgwrapper::before{content:"";position:absolute;
+    left:0;right:0;bottom:0;height:3px;z-index:3;pointer-events:none;
+    background:linear-gradient(90deg,transparent,var(--kw-c),transparent);
+    transform:scaleX(0);transition:transform .4s cubic-bezier(.22,1,.36,1)}
+  .kw-card:hover .t-store__card__imgwrapper::before{transform:scaleX(1)}
+
+  /* ЛЕГЕНДАРКА — «ДВОЙНОЙ КАНТ»: рама-паспарту из двух линий,
+     лейбл врезан в верхний кант по центру */
+  .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;inset:0;
+    border:1px solid var(--kw-c);opacity:0;transition:opacity .3s ease;
+    pointer-events:none;z-index:3}
+  .kw-card[data-kw-done="legend"]::after{content:"";position:absolute;inset:6px;
+    border:1px solid var(--kw-c);opacity:0;transform:scale(1.02);
+    transition:opacity .3s ease, transform .35s ease;pointer-events:none;z-index:3}
+  .kw-card[data-kw-done="legend"]:hover::before{opacity:1}
+  .kw-card[data-kw-done="legend"]:hover::after{opacity:.5;transform:none}
+  .kw-card[data-kw-done="legend"] .t-store__card__imgwrapper::before{display:none}
 
   /* имя вещи — чёрное в покое, цвет грейда на ховере */
   .kw-card .t-store__card__title,
@@ -62,8 +70,9 @@
   .kw-card:hover .t-store__card__title,
   .kw-card:hover .js-store-prod-name{color:var(--kw-c)!important}
 
-  /* лейбл: скрыт в покое, въезжает сверху на ховере */
-  .kw-badge{position:absolute;top:10px;left:10px;z-index:4;pointer-events:none;
+  /* лейбл: скрыт в покое, въезжает на ховере.
+     Редкие/эпики — верхний левый угол; легендарка — врезан в верхний кант */
+  .kw-badge{position:absolute;top:10px;left:10px;z-index:5;pointer-events:none;
     font-family:'TildaSans',Arial,sans-serif;font-size:10px;font-weight:600;
     line-height:1;letter-spacing:.14em;text-transform:uppercase;
     color:var(--kw-c);background:transparent;
@@ -71,6 +80,10 @@
     opacity:0;transform:translateY(-6px);
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:none}
+  .kw-card[data-kw-done="legend"] .kw-badge{top:-9px;left:50%;border:0;
+    background:#fff;padding:3px 12px;letter-spacing:.16em;
+    transform:translate(-50%,4px)}
+  .kw-card[data-kw-done="legend"]:hover .kw-badge{transform:translate(-50%,0)}
 
   /* блик света по фото на ховере */
   .kw-card .t-store__card__imgwrapper{position:relative;overflow:hidden}
@@ -92,12 +105,15 @@
   .kw-drop time em{font-style:normal;color:#888;font-size:13px;margin:0 2px}
   @media (max-width:560px){.kw-drop{gap:6px 14px}.kw-drop b{font-size:11.5px}}
 
-  /* тач-устройства: ховера нет — лейбл и цвет имени видны постоянно */
+  /* тач-устройства: ховера нет — всё видно постоянно */
   @media (hover:none){
     .kw-badge{opacity:1;transform:none}
+    .kw-card[data-kw-done="legend"] .kw-badge{transform:translate(-50%,0)}
     .kw-card .t-store__card__title,
     .kw-card .js-store-prod-name{color:var(--kw-c)!important}
-    .kw-card::before{opacity:.5}
+    .kw-card .t-store__card__imgwrapper::before{transform:scaleX(1)}
+    .kw-card[data-kw-done="legend"]::before{opacity:1}
+    .kw-card[data-kw-done="legend"]::after{opacity:.5;transform:none}
   }
 
   @media (prefers-reduced-motion:reduce){
