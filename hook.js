@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.9.1";
+  const VERSION = "0.9.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -55,10 +55,10 @@
   .kw-card:hover .t-store__card__imgwrapper::before{transform:scaleX(1)}
 
   /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру.
-     Снизу рамка продлена на 12px, чтобы не липнуть к цене товара */
+     Снизу рамка отпущена на 28px — воздух между ценой и линией */
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
   .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
-    inset:-2px -2px -12px -2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
+    inset:-2px -2px -28px -2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
     background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
       var(--kw-c) 50%,transparent 75%,var(--kw-c));
     -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
