@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.3.0";
+  const VERSION = "1.3.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -478,7 +478,10 @@
   }
 
   function sortCatalog() {
-    document.querySelectorAll(".t-store__grid-cont").forEach(function (grid) {
+    // карточки Тильды лежат внутри .t-store__card-list (если он есть),
+    // иначе прямо в .t-store__grid-cont
+    document.querySelectorAll(".t-store__card-list, .t-store__grid-cont")
+      .forEach(function (grid) {
       const units = [].slice.call(grid.children).filter(function (ch) {
         return ch.classList.contains("t-store__card") ||
                ch.querySelector(".t-store__card");
