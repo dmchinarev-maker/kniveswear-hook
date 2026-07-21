@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.2.4";
+  const VERSION = "1.3.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -466,12 +466,45 @@
     seoAlts();
   }
 
+  /* ==== ПОРЯДОК СЕТКИ: топы → туники → остальное → пончо в хвост ====
+   * Внутри групп исходный порядок Тильды сохраняется. Идемпотентно:
+   * двигаем DOM только если порядок реально отличается. */
+  function gridPrio(title) {
+    const t = title.toLowerCase();
+    if (t.indexOf("топ") >= 0) return 0;
+    if (t.indexOf("туника") >= 0) return 1;
+    if (t.indexOf("пончо") >= 0) return 9;
+    return 5;
+  }
+
+  function sortCatalog() {
+    document.querySelectorAll(".t-store__grid-cont").forEach(function (grid) {
+      const units = [].slice.call(grid.children).filter(function (ch) {
+        return ch.classList.contains("t-store__card") ||
+               ch.querySelector(".t-store__card");
+      });
+      if (units.length < 2) return;
+      const cardOf = function (u) {
+        return u.classList.contains("t-store__card")
+          ? u : u.querySelector(".t-store__card");
+      };
+      // сортируем только когда все названия уже отрисованы
+      if (units.some(function (u) { return !titleOf(cardOf(u)); })) return;
+      const sorted = units.slice().sort(function (a, b) {
+        return gridPrio(titleOf(cardOf(a))) - gridPrio(titleOf(cardOf(b)));
+      });
+      const changed = sorted.some(function (u, i) { return u !== units[i]; });
+      if (changed) sorted.forEach(function (u) { grid.appendChild(u); });
+    });
+  }
+
   function scan() {
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
     mountDropBar();
     mountStats();
     seoPatch();
+    sortCatalog();
   }
 
   /* ==== таймер дропа: полоса перед блоком каталога ==== */
