@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.7.1";
+  const VERSION = "0.8.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -52,16 +52,19 @@
     transform:scaleX(0);transition:transform .4s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .t-store__card__imgwrapper::before{transform:scaleX(1)}
 
-  /* ЛЕГЕНДАРКА — «ДВОЙНОЙ КАНТ»: рама-паспарту из двух линий,
-     лейбл врезан в верхний кант по центру */
-  .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;inset:0;
-    border:1px solid var(--kw-c);opacity:0;transition:opacity .3s ease;
-    pointer-events:none;z-index:3}
-  .kw-card[data-kw-done="legend"]::after{content:"";position:absolute;inset:6px;
-    border:1px solid var(--kw-c);opacity:0;transform:scale(1.02);
-    transition:opacity .3s ease, transform .35s ease;pointer-events:none;z-index:3}
-  .kw-card[data-kw-done="legend"]:hover::before{opacity:1}
-  .kw-card[data-kw-done="legend"]:hover::after{opacity:.5;transform:none}
+  /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру.
+     Снизу рамка продлена на 12px, чтобы не липнуть к цене товара */
+  @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
+  .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
+    inset:-2px -2px -12px -2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
+    background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
+      var(--kw-c) 50%,transparent 75%,var(--kw-c));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    transition:opacity .3s ease}
+  .kw-card[data-kw-done="legend"]:hover::before{opacity:1;
+    animation:kwSpin 2.8s linear infinite}
+  @keyframes kwSpin{to{--kw-a:360deg}}
   .kw-card[data-kw-done="legend"] .t-store__card__imgwrapper::before{display:none}
 
   /* имя вещи — чёрное в покое, цвет грейда на ховере */
@@ -106,8 +109,7 @@
     .kw-card .t-store__card__title,
     .kw-card .js-store-prod-name{color:var(--kw-c)!important}
     .kw-card .t-store__card__imgwrapper::before{transform:scaleX(1)}
-    .kw-card[data-kw-done="legend"]::before{opacity:1}
-    .kw-card[data-kw-done="legend"]::after{opacity:.5;transform:none}
+    .kw-card[data-kw-done="legend"]::before{opacity:.6}
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -168,35 +170,10 @@
     const bar = document.createElement("div");
     bar.id = "kw-drop";
     bar.className = "kw-drop";
-    bar.innerHTML = `<i></i><b></b><time></time>`;
+    bar.innerHTML = `<i></i><b></b>`;
     rec.parentNode.insertBefore(bar, rec);
-    const title = bar.querySelector("b"), t = bar.querySelector("time");
-    const pad = n => String(n).padStart(2, "0");
-    const dayWord = n => {
-      const a = n % 10, b = n % 100;
-      if (b >= 11 && b <= 14) return "дней";
-      if (a === 1) return "день";
-      if (a >= 2 && a <= 4) return "дня";
-      return "дней";
-    };
-    function render() {
-      let s = Math.floor((DROP.at - Date.now()) / 1000);
-      if (s <= 0) {
-        title.textContent = DROP.doneTitle;
-        t.textContent = "";
-        clearInterval(timerId);
-        return;
-      }
-      title.textContent = DROP.title;
-      const d = Math.floor(s / 86400); s %= 86400;
-      const h = Math.floor(s / 3600);  s %= 3600;
-      const clock = `${pad(h)}:${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
-      t.innerHTML = d > 0
-        ? `${d}<em>${dayWord(d)}</em>${clock}`
-        : clock;
-    }
-    render();
-    const timerId = setInterval(render, 1000);
+    bar.querySelector("b").textContent =
+      Date.now() < DROP.at ? DROP.title : DROP.doneTitle;
   }
 
   function start() {
