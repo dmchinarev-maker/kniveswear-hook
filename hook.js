@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.8.0";
+  const VERSION = "0.9.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -18,8 +18,8 @@
   };
 
   /* ==== ПРАВИЛА РЕДКОСТИ: подстрока названия (lowercase) → грейд ====
-   * Первое совпадение побеждает. Нет совпадения — карточка остаётся чистой.
-   * Грейды: rare (синий) / epic (фиолетовый) / legend (оранжевый).
+   * Первое совпадение побеждает. Нет совпадения — DEFAULT_RARITY (обычная).
+   * Грейды: common (серый) / rare (синий) / epic (фиолетовый) / legend (оранжевый).
    */
   const RARITY_RULES = [
     { match: "сюртук",  rarity: "legend" },
@@ -32,10 +32,13 @@
   ];
 
   const RAR = {
+    common: { label: "Обычная",      c: "#9d9d9d", glow: "rgba(0,0,0,.10)" },
     rare:   { label: "Редкая",       c: "#0070dd", glow: "rgba(0,112,221,.16)" },
     epic:   { label: "Эпическая",    c: "#a335ee", glow: "rgba(163,53,238,.16)" },
     legend: { label: "Легендарная",  c: "#f07800", glow: "rgba(240,120,0,.18)" },
   };
+  // всё, что не совпало ни с одним правилом, получает этот грейд
+  const DEFAULT_RARITY = "common";
 
   /* ==== СТИЛИ: тонко, светло, в шрифте сайта ==== */
   const css = `
@@ -130,7 +133,7 @@
     const t = (title || "").toLowerCase();
     for (const rule of RARITY_RULES)
       if (t.includes(rule.match)) return rule.rarity;
-    return null;
+    return DEFAULT_RARITY;
   }
 
   function titleOf(card) {
@@ -143,7 +146,6 @@
     const title = titleOf(card);
     if (!title) return;                 // карточка ещё дорисовывается — зайдём позже
     const rar = rarityFor(title);
-    if (!rar) { card.dataset.kwDone = "skip"; return; }
     const r = RAR[rar];
     card.dataset.kwDone = rar;
     card.classList.add("kw-card");
