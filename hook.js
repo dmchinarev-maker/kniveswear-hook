@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.3.2";
+  const VERSION = "1.4.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -120,12 +120,19 @@
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
 
-  /* блик света по фото на ховере */
+  /* воздух между карточками на широких экранах: тильдовский stretch кладёт
+     их встык (0px) — рамкам и свечению негде дышать */
+  @media(min-width:760px){
+    .t-store__card.kw-card{padding-left:9px !important;padding-right:9px !important}
+  }
+
+  /* блик света по фото на ховере — ТОЛЬКО у карточек без второй фотографии:
+     там, где Тильда меняет фото по ховеру, блик мельтешит поверх смены */
   .kw-card .t-store__card__imgwrapper{position:relative;overflow:hidden}
-  .kw-card .t-store__card__imgwrapper::after{content:"";position:absolute;inset:0;
+  .kw-card:not(.kw-swap) .t-store__card__imgwrapper::after{content:"";position:absolute;inset:0;
     pointer-events:none;z-index:2;transform:translateX(-130%);
     background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.45) 50%,transparent 58%)}
-  .kw-card:hover .t-store__card__imgwrapper::after{animation:kwGlint .8s ease}
+  .kw-card:not(.kw-swap):hover .t-store__card__imgwrapper::after{animation:kwGlint .8s ease}
   @keyframes kwGlint{0%{transform:translateX(-130%)}60%,100%{transform:translateX(130%)}}
 
   /* полоса дропа: тонкие линии, шрифт сайта, табличные цифры */
@@ -183,6 +190,8 @@
     const r = RAR[rar];
     card.dataset.kwDone = rar;
     card.classList.add("kw-card");
+    if (card.querySelector(".t-store__card__bgimg_second"))
+      card.classList.add("kw-swap");
     card.style.setProperty("--kw-c", r.c);
     card.style.setProperty("--kw-glow", r.glow);
     const badge = document.createElement("span");
