@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.3.1";
+  const VERSION = "1.3.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -478,26 +478,18 @@
   }
 
   function sortCatalog() {
-    // карточки Тильды лежат внутри .t-store__card-list (если он есть),
-    // иначе прямо в .t-store__grid-cont
-    document.querySelectorAll(".t-store__card-list, .t-store__grid-cont")
-      .forEach(function (grid) {
-      const units = [].slice.call(grid.children).filter(function (ch) {
-        return ch.classList.contains("t-store__card") ||
-               ch.querySelector(".t-store__card");
+    // Контейнер Тильды — flex, поэтому порядок задаём чистым CSS order,
+    // НЕ трогая DOM: перемещение узлов ломало тильдовские grid-separator'ы
+    // (пустота над каталогом на широких экранах).
+    document.querySelectorAll(".t-store__card-list").forEach(function (list) {
+      [].slice.call(list.children).forEach(function (ch) {
+        if (ch.classList.contains("t-store__card")) {
+          const t = titleOf(ch);
+          if (t) ch.style.order = gridPrio(t);
+        } else {
+          ch.style.order = 50;   // сепараторы и прочее — в хвост, они пустые
+        }
       });
-      if (units.length < 2) return;
-      const cardOf = function (u) {
-        return u.classList.contains("t-store__card")
-          ? u : u.querySelector(".t-store__card");
-      };
-      // сортируем только когда все названия уже отрисованы
-      if (units.some(function (u) { return !titleOf(cardOf(u)); })) return;
-      const sorted = units.slice().sort(function (a, b) {
-        return gridPrio(titleOf(cardOf(a))) - gridPrio(titleOf(cardOf(b)));
-      });
-      const changed = sorted.some(function (u, i) { return u !== units[i]; });
-      if (changed) sorted.forEach(function (u) { grid.appendChild(u); });
     });
   }
 
