@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.4.0";
+  const VERSION = "1.4.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -83,7 +83,8 @@
     font-size:11px;letter-spacing:.14em}
   .kw-res b.ok{color:#2e7d32} .kw-res b.no{color:#b3362c}
   .kw-card{transition:transform .22s ease, box-shadow .35s ease}
-  .kw-card:hover{box-shadow:0 6px 40px var(--kw-glow), 0 2px 14px var(--kw-glow)}
+  /* свечение направлено ВНИЗ, а не вбок — не заливает соседние карточки */
+  .kw-card:hover{box-shadow:0 18px 36px -10px var(--kw-glow)}
   .kw-card .t-store__card__imgwrapper::before{content:"";position:absolute;
     left:0;right:0;bottom:0;height:3px;z-index:3;pointer-events:none;
     background:linear-gradient(90deg,transparent,var(--kw-c),transparent);
@@ -92,8 +93,9 @@
 
   /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент грейда бежит по периметру */
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
+  /* рамка-паспарту: лежит на полях фото (12px от боков), не касаясь соседей */
   .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
-    inset:-2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
+    inset:0 12px;padding:2px;pointer-events:none;z-index:3;opacity:0;
     background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
       var(--kw-c) 50%,transparent 75%,var(--kw-c));
     -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
@@ -120,11 +122,8 @@
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
 
-  /* воздух между карточками на широких экранах: тильдовский stretch кладёт
-     их встык (0px) — рамкам и свечению негде дышать */
-  @media(min-width:760px){
-    .t-store__card.kw-card{padding-left:9px !important;padding-right:9px !important}
-  }
+  /* фото у Тильды фиксированной ширины (inline-стили её JS) — расширить
+     промежутки нельзя, поэтому все эффекты живут ВНУТРИ карточки */
 
   /* блик света по фото на ховере — ТОЛЬКО у карточек без второй фотографии:
      там, где Тильда меняет фото по ховеру, блик мельтешит поверх смены */
