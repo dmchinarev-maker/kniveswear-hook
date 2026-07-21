@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.1.2";
+  const VERSION = "1.2.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -374,11 +374,106 @@
     });
   }
 
+  /* ==== SEO: структурированная разметка и гигиена головы документа ====
+   * Всё идемпотентно и выполняется на каждом scan() — Google и Яндекс
+   * рендерят JS и читают итоговый DOM. */
+
+  function seoCanonical() {
+    const l = document.querySelector('link[rel="canonical"]');
+    if (l && l.href && l.href.indexOf("http://") === 0)
+      l.href = l.href.replace("http://", "https://");
+  }
+
+  function seoOrg() {
+    if (document.getElementById("kw-ld-org")) return;
+    const s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.id = "kw-ld-org";
+    s.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Knives",
+      "url": "https://kniveswear.ru/",
+      "sameAs": ["https://www.ozon.ru/seller/knives/"]
+    });
+    document.head.appendChild(s);
+  }
+
+  function seoProduct() {
+    const info = document.querySelector(".t-store__prod-popup__info");
+    if (!info) return;
+    const nameEl = info.querySelector(".js-store-prod-name, .t-store__prod-popup__name");
+    const name = nameEl ? nameEl.textContent.trim() : "";
+    if (!name) return;
+    const old = document.getElementById("kw-ld-product");
+    if (old && old.dataset.for === name) return;
+    if (old) old.remove();
+
+    const priceEl = info.querySelector(".js-product-price, .t-store__prod-popup__price-value");
+    const price = priceEl ? priceEl.textContent.replace(/[^\d]/g, "") : "";
+    const imgEl = document.querySelector(
+      ".t-store__prod-popup__slider img, .t-store__prod-popup img, .t-slds__img img");
+    const img = imgEl ? (imgEl.getAttribute("data-original") || imgEl.src) : null;
+    const descEl = info.querySelector(".t-store__prod-popup__text");
+    const st = statsFor(name);
+    const desc = (descEl && descEl.textContent.trim()) ||
+      (name + (st ? " — " + st.sub : "") + ". Бренд Knives, Москва. Малые партии.");
+
+    const ld = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": name,
+      "brand": { "@type": "Brand", "name": "Knives" },
+      "description": desc.slice(0, 300),
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "RUB",
+        "availability": "https://schema.org/InStock",
+        "url": location.origin + location.pathname
+      }
+    };
+    if (price) ld.offers.price = price;
+    if (img) ld.image = [img];
+    const s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.id = "kw-ld-product";
+    s.dataset.for = name;
+    s.textContent = JSON.stringify(ld);
+    document.head.appendChild(s);
+
+    // титл и описание — только на отдельных страницах товара
+    if (location.pathname.indexOf("/tproduct") === 0) {
+      if (document.title.trim() === name)
+        document.title = name + " — купить в интернет-магазине Knives";
+      const md = document.querySelector('meta[name="description"]');
+      if (md && !md.content.trim())
+        md.content = (name + ": " + desc).slice(0, 158);
+    }
+  }
+
+  function seoAlts() {
+    document.querySelectorAll(
+      '.t-store__card img:not([alt]), .t-store__card img[alt=""]')
+      .forEach(function (img) {
+        const card = img.closest(".t-store__card");
+        const t = card ? titleOf(card) : "";
+        if (t) img.alt = t + " — Knives";
+      });
+  }
+
+  function seoPatch() {
+    seoCanonical();
+    seoOrg();
+    seoProduct();
+    seoAlts();
+  }
+
   function scan() {
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
     mountDropBar();
     mountStats();
+    seoPatch();
   }
 
   /* ==== таймер дропа: полоса перед блоком каталога ==== */
