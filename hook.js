@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.9.5";
+  const VERSION = "0.9.6";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -49,6 +49,9 @@
   /* все карточки с грейдом удлинены вниз — цена не липнет к краю
      (селектор с запасом специфичности против тильдовского CSS) */
   .t-store__card.kw-card{padding-bottom:26px !important;background:#fff}
+
+  /* тильдовский значок SALE скрыт — редкость говорит сама за себя */
+  .t-store__card__mark{display:none !important}
   .kw-card{transition:transform .22s ease, box-shadow .35s ease}
   .kw-card:hover{box-shadow:0 6px 40px var(--kw-glow), 0 2px 14px var(--kw-glow)}
   .kw-card .t-store__card__imgwrapper::before{content:"";position:absolute;
