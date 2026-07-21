@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.9.4";
+  const VERSION = "0.9.5";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -46,9 +46,10 @@
 
   /* РЕДКИЕ/ЭПИКИ — «ОРЕОЛ»: ни одной линии, мягкое свечение грейда
      + световая полоса, разгорающаяся под фото */
-  /* все карточки с грейдом удлинены вниз — цена не липнет к краю */
-  .kw-card{transition:transform .22s ease, box-shadow .35s ease;
-    padding-bottom:26px;background:#fff}
+  /* все карточки с грейдом удлинены вниз — цена не липнет к краю
+     (селектор с запасом специфичности против тильдовского CSS) */
+  .t-store__card.kw-card{padding-bottom:26px !important;background:#fff}
+  .kw-card{transition:transform .22s ease, box-shadow .35s ease}
   .kw-card:hover{box-shadow:0 6px 40px var(--kw-glow), 0 2px 14px var(--kw-glow)}
   .kw-card .t-store__card__imgwrapper::before{content:"";position:absolute;
     left:0;right:0;bottom:0;height:3px;z-index:3;pointer-events:none;
