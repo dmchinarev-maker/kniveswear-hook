@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "0.3.0";
+  const VERSION = "0.4.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -32,9 +32,9 @@
   ];
 
   const RAR = {
-    rare:   { label: "Редкая вещь",       c: "#0070dd", glow: "rgba(0,112,221,.16)" },
-    epic:   { label: "Эпическая вещь",    c: "#a335ee", glow: "rgba(163,53,238,.16)" },
-    legend: { label: "Легендарная вещь",  c: "#f07800", glow: "rgba(240,120,0,.18)" },
+    rare:   { label: "Редкая",       c: "#0070dd", glow: "rgba(0,112,221,.16)" },
+    epic:   { label: "Эпическая",    c: "#a335ee", glow: "rgba(163,53,238,.16)" },
+    legend: { label: "Легендарная",  c: "#f07800", glow: "rgba(240,120,0,.18)" },
   };
 
   /* ==== СТИЛИ: тонко, светло, в шрифте сайта ==== */
@@ -42,9 +42,9 @@
   .kw-card{position:relative;transition:transform .22s ease}
   .kw-card:hover{transform:translateY(-3px)}
 
-  /* тонкая рамка: едва заметна в покое, цвет грейда на ховере */
+  /* до ховера карточка полностью стоковая; рамка проявляется на ховере */
   .kw-card::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
-    border:1px solid var(--kw-c);opacity:.22;
+    border:1px solid var(--kw-c);opacity:0;
     transition:opacity .25s ease, box-shadow .3s ease}
   .kw-card:hover::before{opacity:1;
     box-shadow:0 10px 34px var(--kw-glow), 0 2px 10px var(--kw-glow)}
@@ -63,22 +63,29 @@
   .kw-tick.bl{bottom:-5px;left:-5px;transform:scale(.6) rotate(270deg)}
   .kw-card:hover .kw-tick.bl{transform:scale(1) rotate(270deg)}
 
-  /* имя вещи — цвет грейда, всегда (главный вовский сигнал) */
+  /* имя вещи — чёрное в покое, цвет грейда на ховере */
   .kw-card .t-store__card__title,
-  .kw-card .js-store-prod-name{color:var(--kw-c)!important}
+  .kw-card .js-store-prod-name{transition:color .25s ease}
+  .kw-card:hover .t-store__card__title,
+  .kw-card:hover .js-store-prod-name{color:var(--kw-c)!important}
 
-  /* лейбл: белая плашка, тонкая линия грейда, шрифт сайта */
+  /* лейбл: скрыт в покое, въезжает сверху на ховере */
   .kw-badge{position:absolute;top:10px;left:10px;z-index:4;pointer-events:none;
     font-family:'TildaSans',Arial,sans-serif;font-size:10px;font-weight:600;
     line-height:1;letter-spacing:.14em;text-transform:uppercase;
     color:var(--kw-c);background:rgba(255,255,255,.94);
     border:1px solid var(--kw-c);padding:5px 8px 4px;
-    opacity:.92;transition:opacity .25s ease}
-  .kw-card:hover .kw-badge{opacity:1}
+    opacity:0;transform:translateY(-6px);
+    transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
+  .kw-card:hover .kw-badge{opacity:1;transform:none}
 
-  /* лёгкий постоянный акцент легендарки — тонкое тёплое свечение */
-  .kw-card[data-kw-done="legend"]::before{opacity:.45;
-    box-shadow:0 4px 22px rgba(240,120,0,.10)}
+  /* блик света по фото на ховере */
+  .kw-card .t-store__card__imgwrapper{position:relative;overflow:hidden}
+  .kw-card .t-store__card__imgwrapper::after{content:"";position:absolute;inset:0;
+    pointer-events:none;z-index:2;transform:translateX(-130%);
+    background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.45) 50%,transparent 58%)}
+  .kw-card:hover .t-store__card__imgwrapper::after{animation:kwGlint .8s ease}
+  @keyframes kwGlint{0%{transform:translateX(-130%)}60%,100%{transform:translateX(130%)}}
 
   /* полоса дропа: тонкие линии, шрифт сайта, табличные цифры */
   .kw-drop{max-width:1160px;margin:28px auto 6px;padding:13px 20px;
@@ -94,6 +101,7 @@
 
   @media (prefers-reduced-motion:reduce){
     .kw-card,.kw-card::before,.kw-tick,.kw-badge{transition:none!important}
+    .kw-card .t-store__card__imgwrapper::after{animation:none!important}
   }`;
 
   function injectStyles() {
