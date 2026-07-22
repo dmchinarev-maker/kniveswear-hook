@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.4";
+  const VERSION = "1.5.5";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -131,8 +131,12 @@
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
 
-  /* ОТКЛЮЧАЕМ тильдовскую смену фото на ховере: держим основной кадр
-     всегда видимым, второй (под ним) не проявляется */
+  /* ОТКЛЮЧАЕМ тильдовскую смену фото на ховере НАГЛУХО:
+     второй кадр удаляется из рендера, основной прибит с максимальной
+     специфичностью (правило Тильды живёт в кросс-доменном CSS) */
+  .t-store__card.kw-card .t-store__card__bgimg_second{display:none !important}
+  .t-store__card.kw-card:hover .t-store__card__bgimg.t-store__card__bgimg_hover,
+  .t-store__card.kw-card:hover .t-store__card__bgimg,
   .kw-card .t-store__card__bgimg{opacity:1 !important}
 
   /* блик света по фото на ховере (смена кадра отключена — конфликта нет) */
