@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.4.2";
+  const VERSION = "1.5.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -31,10 +31,12 @@
     // добавляй свои правила выше этой строки
   ];
 
+  // c  — цвет рамки/свечения (яркий, «игровой»)
+  // tc — цвет ТЕКСТА (плашка, имя): у легендарки затемнён до контраста ≥4.5:1
   const RAR = {
-    rare:   { label: "Редкая",       c: "#0070dd", glow: "rgba(0,112,221,.16)" },
-    epic:   { label: "Эпическая",    c: "#a335ee", glow: "rgba(163,53,238,.16)" },
-    legend: { label: "Легендарная",  c: "#f07800", glow: "rgba(240,120,0,.18)" },
+    rare:   { label: "Редкая",       c: "#0070dd", tc: "#0070dd", glow: "rgba(0,112,221,.16)" },
+    epic:   { label: "Эпическая",    c: "#a335ee", tc: "#a335ee", glow: "rgba(163,53,238,.16)" },
+    legend: { label: "Легендарная",  c: "#f07800", tc: "#a85400", glow: "rgba(240,120,0,.18)" },
   };
   // всё, что не совпало ни с одним правилом, получает этот грейд
   const DEFAULT_RARITY = "rare";
@@ -57,9 +59,10 @@
   .kw-stats{margin:26px 0 8px;border:1px solid #ececec;background:#fff;
     padding:24px 26px 0;box-shadow:0 10px 40px rgba(0,0,0,.06);
     font-family:'TildaSans',Arial,sans-serif;color:#111}
-  .kw-stats .kn{font-size:19px;font-weight:700;letter-spacing:.04em;color:var(--kw-sc,#111)}
+  .kw-stats .kn{font-size:19px;font-weight:700;letter-spacing:.04em;color:var(--kw-sc,#111);
+    margin:0;line-height:1.2}
   .kw-stats .ks{font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    color:#8a8a8a;margin:5px 0 20px;line-height:1.8}
+    color:#6b6b6b;margin:5px 0 20px;line-height:1.8}
   .kw-srow{display:grid;grid-template-columns:128px 1fr 34px;gap:10px;align-items:center;margin-bottom:10px}
   .kw-srow .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#555}
   .kw-srow .v{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
@@ -68,15 +71,16 @@
     animation:kwGrow .9s cubic-bezier(.22,1,.36,1)}
   @keyframes kwGrow{from{width:0}}
   .kw-foot{margin-top:16px;padding-top:13px;border-top:1px solid #ececec;
-    font-size:12.5px;color:#8a8a8a;line-height:1.75}
+    font-size:12.5px;color:#6b6b6b;line-height:1.75}
   .kw-foot b{color:#555;font-weight:600}
   .kw-check{border-top:1px solid #ececec;margin:0 -26px;padding:13px 26px 16px;background:#fafafa}
   .kw-check .kc-t{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a8a8a}
   .kw-check .kc-row{display:flex;gap:14px;align-items:flex-start;margin-top:9px}
   .kw-roll{font-family:'TildaSans',Arial,sans-serif;font-size:12px;font-weight:600;
     letter-spacing:.1em;text-transform:uppercase;background:#111;color:#fff;
-    border:0;padding:10px 14px;cursor:pointer;white-space:nowrap}
+    border:0;padding:12px 16px;min-height:44px;cursor:pointer;white-space:nowrap}
   .kw-roll:hover{background:#333}
+  .kw-roll:focus-visible{outline:2px solid var(--kw-sc,#111);outline-offset:2px}
   .kw-res{font-family:Georgia,serif;font-style:italic;font-size:13.5px;color:#3c3c3c;
     line-height:1.5;min-height:38px;flex:1}
   .kw-res b{font-style:normal;font-family:'TildaSans',Arial,sans-serif;
@@ -109,14 +113,14 @@
   .kw-card .t-store__card__title,
   .kw-card .js-store-prod-name{transition:color .25s ease}
   .kw-card:hover .t-store__card__title,
-  .kw-card:hover .js-store-prod-name{color:var(--kw-c)!important}
+  .kw-card:hover .js-store-prod-name{color:var(--kw-tc)!important}
 
   /* лейбл: у ВСЕХ грейдов — белая плашка сверху по центру, врезанная
      в верхний край (у легендарки она разрезает кант); скрыт до ховера */
   .kw-badge{position:absolute;top:-9px;left:50%;z-index:5;pointer-events:none;
     font-family:'TildaSans',Arial,sans-serif;font-size:10px;font-weight:600;
     line-height:1;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--kw-c);background:#fff;padding:3px 12px;
+    color:var(--kw-tc);background:#fff;padding:3px 12px;
     opacity:0;transform:translate(-50%,4px);white-space:nowrap;
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
@@ -149,7 +153,7 @@
   @media (hover:none){
     .kw-badge{opacity:1;transform:translate(-50%,0)}
     .kw-card .t-store__card__title,
-    .kw-card .js-store-prod-name{color:var(--kw-c)!important}
+    .kw-card .js-store-prod-name{color:var(--kw-tc)!important}
     .kw-card .t-store__card__imgwrapper::before{transform:scaleX(1)}
     .kw-card[data-kw-done="legend"]::before{opacity:.6}
   }
@@ -191,6 +195,7 @@
     if (card.querySelector(".t-store__card__bgimg_second"))
       card.classList.add("kw-swap");
     card.style.setProperty("--kw-c", r.c);
+    card.style.setProperty("--kw-tc", r.tc);
     card.style.setProperty("--kw-glow", r.glow);
     const badge = document.createElement("span");
     badge.className = "kw-badge";
@@ -333,7 +338,7 @@
     const box = document.createElement("div");
     box.className = "kw-stats";
     box.dataset.for = title;
-    const rar = rarityFor(title), rc = RAR[rar] ? RAR[rar].c : "#111";
+    const rar = rarityFor(title), rc = RAR[rar] ? RAR[rar].tc : "#111";
     box.style.setProperty("--kw-sc", rc);
     let num = 0;
     for (let i = 0; i < title.length; i++) num = (num * 31 + title.charCodeAt(i)) % 97;
@@ -345,13 +350,13 @@
     const foot = [`<b>Слот:</b> ${st.slot}`]
       .concat(st.pass.map(p => `<b>${p[0]}:</b> ${p[1]}`)).join(" · ");
     box.innerHTML =
-      `<div class="kn">${title}</div>` +
+      `<h3 class="kn">${title}</h3>` +
       `<div class="ks">${gradeLabel} · ${st.sub} · паспорт № 07/${String(num).padStart(2, "0")}</div>` +
       bars +
       `<div class="kw-foot">${foot}</div>` +
       `<div class="kw-check"><div class="kc-t">Проверка: ${st.check.skill} · 2d6+${st.check.mod} против ${st.check.diff}</div>` +
       `<div class="kc-row"><button class="kw-roll" type="button">${st.check.act}</button>` +
-      `<div class="kw-res"><i>Кубики ждут.</i></div></div></div>`;
+      `<div class="kw-res" role="status" aria-live="polite"><i>Кубики ждут.</i></div></div></div>`;
     box.querySelector(".kw-roll").addEventListener("click", function () {
       const d1 = 1 + Math.floor(Math.random() * 6), d2 = 1 + Math.floor(Math.random() * 6);
       const total = d1 + d2 + st.check.mod, ok = total >= st.check.diff;
@@ -518,7 +523,9 @@
     const bar = document.createElement("div");
     bar.id = "kw-drop";
     bar.className = "kw-drop";
-    bar.innerHTML = `<i></i><b></b>`;
+    bar.setAttribute("role", "note");
+    bar.setAttribute("aria-label", DROP.title);
+    bar.innerHTML = `<i aria-hidden="true"></i><b></b>`;
     rec.parentNode.insertBefore(bar, rec);
     bar.querySelector("b").textContent =
       Date.now() < DROP.at ? DROP.title : DROP.doneTitle;
