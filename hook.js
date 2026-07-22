@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.1";
+  const VERSION = "1.5.2";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -129,16 +129,16 @@
     transition:opacity .25s ease, transform .3s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .kw-badge{opacity:1;transform:translate(-50%,0)}
 
-  /* фото у Тильды фиксированной ширины (inline-стили её JS) — расширить
-     промежутки нельзя, поэтому все эффекты живут ВНУТРИ карточки */
+  /* ОТКЛЮЧАЕМ тильдовскую смену фото на ховере: держим основной кадр
+     всегда видимым, второй (под ним) не проявляется */
+  .kw-card .t-store__card__bgimg{opacity:1 !important}
 
-  /* блик света по фото на ховере — ТОЛЬКО у карточек без второй фотографии:
-     там, где Тильда меняет фото по ховеру, блик мельтешит поверх смены */
+  /* блик света по фото на ховере (смена кадра отключена — конфликта нет) */
   .kw-card .t-store__card__imgwrapper{position:relative;overflow:hidden}
-  .kw-card:not(.kw-swap) .t-store__card__imgwrapper::after{content:"";position:absolute;inset:0;
+  .kw-card .t-store__card__imgwrapper::after{content:"";position:absolute;inset:0;
     pointer-events:none;z-index:2;transform:translateX(-130%);
     background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.45) 50%,transparent 58%)}
-  .kw-card:not(.kw-swap):hover .t-store__card__imgwrapper::after{animation:kwGlint .8s ease}
+  .kw-card:hover .t-store__card__imgwrapper::after{animation:kwGlint .8s ease}
   @keyframes kwGlint{0%{transform:translateX(-130%)}60%,100%{transform:translateX(130%)}}
 
   /* полоса дропа: тонкие линии, шрифт сайта, табличные цифры */
