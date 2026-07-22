@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.5";
+  const VERSION = "1.5.6";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -105,8 +105,9 @@
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
   .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
     inset:2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
-    background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
-      var(--kw-c) 50%,transparent 75%,var(--kw-c));
+    background:conic-gradient(from var(--kw-a),
+      var(--kw-c), rgba(240,120,0,.4) 25%,
+      var(--kw-c) 50%, rgba(240,120,0,.4) 75%, var(--kw-c));
     -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
     -webkit-mask-composite:xor;mask-composite:exclude;
     transition:opacity .3s ease}
