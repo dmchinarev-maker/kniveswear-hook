@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.3";
+  const VERSION = "1.5.4";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -96,22 +96,24 @@
     transform:scaleX(0);transition:transform .4s cubic-bezier(.22,1,.36,1)}
   .kw-card:hover .t-store__card__imgwrapper::before{transform:scaleX(1)}
 
-  /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА»: градиент бежит по периметру ВНУТРИ ФОТО
-     (inset:8px внутри imgwrapper). Не трогает соседей, не лезет за край
-     карточки сверху — плашка и рамка больше не воюют за верхнюю кромку. */
+  /* КОРНЕВОЙ ФИКС: на ховере карточка поднимается НАД соседями —
+     раньше их белые тела (впритык, отрисованы позже) закрашивали рамку */
+  .t-store__card.kw-card:hover{z-index:20}
+
+  /* ЛЕГЕНДАРКА — «ЖИВАЯ КРОМКА» вокруг ВСЕЙ карточки (фото + имя + цена).
+     inset:2px — внутри собственного бокса, а поверх соседей выносит z-index */
   @property --kw-a{syntax:"<angle>";initial-value:0deg;inherits:false}
-  .kw-card[data-kw-done="legend"] .t-store__card__imgwrapper::before{
-    content:"";position:absolute;inset:8px;top:8px;right:8px;bottom:8px;left:8px;
-    height:auto;padding:2px;pointer-events:none;z-index:4;opacity:0;
-    transform:none;
+  .kw-card[data-kw-done="legend"]::before{content:"";position:absolute;
+    inset:2px;padding:2px;pointer-events:none;z-index:3;opacity:0;
     background:conic-gradient(from var(--kw-a),var(--kw-c),transparent 25%,
       var(--kw-c) 50%,transparent 75%,var(--kw-c));
     -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
     -webkit-mask-composite:xor;mask-composite:exclude;
     transition:opacity .3s ease}
-  .kw-card[data-kw-done="legend"]:hover .t-store__card__imgwrapper::before{
-    opacity:1;transform:none;animation:kwSpin 2.4s linear infinite}
+  .kw-card[data-kw-done="legend"]:hover::before{opacity:1;
+    animation:kwSpin 2.4s linear infinite}
   @keyframes kwSpin{to{--kw-a:360deg}}
+  .kw-card[data-kw-done="legend"] .t-store__card__imgwrapper::before{display:none}
 
   /* имя вещи — чёрное в покое, цвет грейда на ховере */
   .kw-card .t-store__card__title,
