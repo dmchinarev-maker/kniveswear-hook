@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.6";
+  const VERSION = "1.5.7";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -23,6 +23,7 @@
    */
   const RARITY_RULES = [
     { match: "сюртук",  rarity: "legend" },
+    { match: "пончо в клетку", rarity: "legend" },  // выше общего «пончо» — правило точнее
     { match: "пончо",   rarity: "epic"   },
     { match: "плащ",    rarity: "epic"   },
     { match: "куртка",  rarity: "epic"   },
