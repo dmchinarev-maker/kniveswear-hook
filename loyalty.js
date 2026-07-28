@@ -5,10 +5,10 @@
   "use strict";
 
   // ── КОНФИГ (заполнить после деплоя kniveswear-loyalty на Vercel) ──
-  var ENABLED = false;                               // ← ПОСЛЕ деплоя поставить true
-  var BACKEND = "https://knives-loyalty.vercel.app"; // ← боевой домен бэкенда
-  var BOT_NAME = "KnivesShopBot";                    // ← username бота БЕЗ @ (как в /setdomain)
-  var LOYALTY_VERSION = "0.1.0";
+  var ENABLED = true;
+  var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
+  var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
+  var LOYALTY_VERSION = "0.1.1";
 
   var LS = "kw_loyalty_jwt";
   var me = null; // {uid,name,balance,rate,txns}

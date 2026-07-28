@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.8";
+  const VERSION = "1.6.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -551,6 +551,18 @@
     const mo = new MutationObserver(() => scan());
     mo.observe(document.body, { childList: true, subtree: true });
     console.log("[kniveswear-hook] v" + VERSION + " активен");
+    loadLoyalty();
+  }
+
+  /* Клиент лояльности (Telegram-вход + баллы) — отдельным файлом из этого же репо,
+     чтобы правки экономики/UI кабинета не трогали хук рамок. */
+  function loadLoyalty() {
+    if (document.getElementById("kw-loyalty-js")) return;
+    const s = document.createElement("script");
+    s.id = "kw-loyalty-js";
+    s.defer = true;
+    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/loyalty.js";
+    document.head.appendChild(s);
   }
 
   if (document.readyState === "loading")
