@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.5.7";
+  const VERSION = "1.5.8";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -44,6 +44,8 @@
 
   /* ==== СТИЛИ: тонко, светло, в шрифте сайта ==== */
   const css = `
+  /* убрана промо-плашка «-15% по промокоду firstblood» (Tilda-блок rec1661147731) */
+  #rec1661147731{display:none!important}
   .kw-card{position:relative;transition:transform .22s ease}
   .kw-card:hover{transform:translateY(-3px)}
 

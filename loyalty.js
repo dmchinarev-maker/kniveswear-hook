@@ -1,0 +1,190 @@
+/* kniveswear loyalty client — вход по Telegram + баллы.
+   Подключается вместе с hook.js (hook.js грузит этот файл сам).
+   ⚠️ ПОСЛЕ ДЕПЛОЯ бэкенда впиши его домен в BACKEND ниже и запушь. */
+(function () {
+  "use strict";
+
+  // ── КОНФИГ (заполнить после деплоя kniveswear-loyalty на Vercel) ──
+  var ENABLED = false;                               // ← ПОСЛЕ деплоя поставить true
+  var BACKEND = "https://knives-loyalty.vercel.app"; // ← боевой домен бэкенда
+  var BOT_NAME = "KnivesShopBot";                    // ← username бота БЕЗ @ (как в /setdomain)
+  var LOYALTY_VERSION = "0.1.0";
+
+  var LS = "kw_loyalty_jwt";
+  var me = null; // {uid,name,balance,rate,txns}
+
+  /* ---------- утилиты ---------- */
+  function token() { try { return localStorage.getItem(LS); } catch (e) { return null; } }
+  function setToken(t) { try { localStorage.setItem(LS, t); } catch (e) {} }
+  function clearToken() { try { localStorage.removeItem(LS); } catch (e) {} }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var h = opts.headers || {};
+    var t = token();
+    if (t) h["Authorization"] = "Bearer " + t;
+    if (opts.body) h["Content-Type"] = "application/json";
+    return fetch(BACKEND + path, {
+      method: opts.method || "GET",
+      headers: h,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then(function (r) {
+      if (r.status === 401) { clearToken(); me = null; }
+      return r.json().catch(function () { return {}; });
+    });
+  }
+
+  /* ---------- перехват JWT из редиректа Telegram ---------- */
+  function grabTokenFromHash() {
+    var m = (location.hash || "").match(/loyalty=([^&]+)/);
+    if (m) {
+      setToken(decodeURIComponent(m[1]));
+      // почистить фрагмент, не трогая остальной hash
+      var clean = location.hash.replace(/[#&]?loyalty=[^&]+/, "");
+      history.replaceState(null, "", location.pathname + location.search + (clean && clean !== "#" ? clean : ""));
+    }
+  }
+
+  /* ---------- вставка loyalty_uid в корзину Тильды ---------- */
+  function injectCartField() {
+    if (!me || !me.uid) return;
+    // Тильдовская корзина — форма .t706__form или любая t-form внутри попапа корзины
+    document.querySelectorAll("form").forEach(function (f) {
+      if (f.querySelector('input[name="loyalty_uid"]')) return;
+      // только формы корзины/заказа
+      if (!/t706|cart|order|zakaz/i.test(f.className + " " + (f.id || ""))) return;
+      var inp = document.createElement("input");
+      inp.type = "hidden"; inp.name = "loyalty_uid"; inp.value = me.uid;
+      f.appendChild(inp);
+    });
+  }
+
+  /* ---------- UI ---------- */
+  function styles() {
+    if (document.getElementById("kw-loyalty-css")) return;
+    var s = document.createElement("style");
+    s.id = "kw-loyalty-css";
+    s.textContent = [
+      ".kwl-btn{position:fixed;right:18px;bottom:18px;z-index:99998;background:#111;color:#fff;",
+      "border:none;border-radius:24px;padding:11px 18px;font:600 14px/1 TildaSans,system-ui,sans-serif;",
+      "cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:transform .18s ease}",
+      ".kwl-btn:hover{transform:translateY(-2px)}",
+      ".kwl-panel{position:fixed;right:18px;bottom:70px;z-index:99999;width:300px;background:#fff;",
+      "color:#111;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:20px;",
+      "font:400 14px/1.5 TildaSans,system-ui,sans-serif;display:none}",
+      ".kwl-panel.open{display:block}",
+      ".kwl-bal{font:700 30px/1 TildaSans,system-ui,sans-serif;margin:6px 0 2px}",
+      ".kwl-sub{color:#888;font-size:12px;margin-bottom:14px}",
+      ".kwl-row{display:flex;justify-content:space-between;font-size:12px;color:#555;padding:4px 0;border-top:1px solid #f0f0f0}",
+      ".kwl-in{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:10px;padding:9px 11px;margin:8px 0;font:inherit}",
+      ".kwl-act{width:100%;background:#111;color:#fff;border:none;border-radius:10px;padding:10px;cursor:pointer;font:600 14px TildaSans,system-ui,sans-serif}",
+      ".kwl-code{font:700 16px/1 monospace;letter-spacing:1px;background:#f5f5f5;border-radius:8px;padding:10px;text-align:center;margin-top:8px}",
+      ".kwl-x{position:absolute;top:12px;right:14px;color:#bbb;cursor:pointer;font-size:18px;line-height:1}",
+      ".kwl-lnk{color:#888;font-size:12px;cursor:pointer;text-decoration:underline;margin-top:10px;display:inline-block}",
+    ].join("");
+    document.head.appendChild(s);
+  }
+
+  var btn, panel;
+  function mount() {
+    styles();
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.className = "kwl-btn";
+      btn.onclick = function () { panel.classList.toggle("open"); render(); };
+      document.body.appendChild(btn);
+    }
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "kwl-panel";
+      document.body.appendChild(panel);
+    }
+    render();
+  }
+
+  function render() {
+    if (!btn || !panel) return;
+    btn.textContent = me ? "★ " + me.balance + " баллов" : "Личный кабинет";
+    if (!panel.classList.contains("open")) return;
+
+    if (!me) {
+      panel.innerHTML =
+        '<span class="kwl-x">×</span>' +
+        '<div style="font-weight:600;margin-bottom:4px">Личный кабинет</div>' +
+        '<div class="kwl-sub">Войдите через Telegram — при регистрации дарим приветственные баллы.</div>' +
+        '<div id="kwl-tg"></div>';
+      panel.querySelector(".kwl-x").onclick = function () { panel.classList.remove("open"); };
+      mountTelegramWidget(panel.querySelector("#kwl-tg"));
+      return;
+    }
+
+    var hist = (me.txns || []).slice(0, 5).map(function (t) {
+      var sign = t.delta > 0 ? "+" : "";
+      var label = { welcome: "Приветственные", order: "За заказ", redeem: "Списание", manual: "Начисление" }[t.reason] || t.reason;
+      return '<div class="kwl-row"><span>' + label + "</span><span>" + sign + t.delta + "</span></div>";
+    }).join("");
+
+    panel.innerHTML =
+      '<span class="kwl-x">×</span>' +
+      '<div style="font-weight:600">' + (me.name ? "Привет, " + me.name : "Личный кабинет") + "</div>" +
+      '<div class="kwl-bal">' + me.balance + " ★</div>" +
+      '<div class="kwl-sub">1 балл = ' + me.rate + " ₽ · оплата до 30% заказа</div>" +
+      hist +
+      '<input class="kwl-in" id="kwl-amt" type="number" min="1" placeholder="Сколько баллов списать">' +
+      '<button class="kwl-act" id="kwl-redeem">Получить промокод</button>' +
+      '<div id="kwl-code"></div>' +
+      '<span class="kwl-lnk" id="kwl-out">Выйти</span>';
+    panel.querySelector(".kwl-x").onclick = function () { panel.classList.remove("open"); };
+    panel.querySelector("#kwl-out").onclick = function () { clearToken(); me = null; render(); };
+    panel.querySelector("#kwl-redeem").onclick = doRedeem;
+  }
+
+  function mountTelegramWidget(host) {
+    if (!host) return;
+    var ret = encodeURIComponent(location.origin + location.pathname);
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://telegram.org/js/telegram-widget.js?22";
+    s.setAttribute("data-telegram-login", BOT_NAME);
+    s.setAttribute("data-size", "large");
+    s.setAttribute("data-radius", "12");
+    s.setAttribute("data-auth-url", BACKEND + "/api/tg/callback?return=" + ret);
+    s.setAttribute("data-request-access", "write");
+    host.appendChild(s);
+  }
+
+  function doRedeem() {
+    var amt = parseInt((document.getElementById("kwl-amt") || {}).value, 10);
+    var box = document.getElementById("kwl-code");
+    if (!amt || amt <= 0) { box.textContent = ""; return; }
+    box.textContent = "…";
+    api("/api/redeem", { method: "POST", body: { points: amt } }).then(function (r) {
+      if (r.error) { box.innerHTML = '<div class="kwl-sub" style="color:#c00">' + (r.error === "insufficient balance" ? "Недостаточно баллов" : r.error) + "</div>"; return; }
+      box.innerHTML = '<div class="kwl-code">' + r.code + "</div>" +
+        '<div class="kwl-sub">−' + r.rub + " ₽. Введите код в корзине при заказе.</div>";
+      refresh();
+    });
+  }
+
+  function refresh() {
+    if (!token()) { me = null; render(); return; }
+    api("/api/me").then(function (r) {
+      me = r && !r.error ? r : null;
+      render();
+      injectCartField();
+    });
+  }
+
+  /* ---------- старт ---------- */
+  function boot() {
+    if (!ENABLED) { return; } // включить после деплоя бэкенда (ENABLED=true)
+    grabTokenFromHash();
+    mount();
+    refresh();
+    // корзина Тильды рисуется динамически — подкладываем поле периодически
+    setInterval(injectCartField, 2500);
+    console.log("[kniveswear-loyalty] v" + LOYALTY_VERSION + " активен");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
