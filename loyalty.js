@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.1.1";
+  var LOYALTY_VERSION = "0.2.0";
 
   var LS = "kw_loyalty_jwt";
   var me = null; // {uid,name,balance,rate,txns}
@@ -139,16 +139,37 @@
     panel.querySelector("#kwl-redeem").onclick = doRedeem;
   }
 
+  // Глобальный колбэк для виджета Telegram (data-onauth).
+  // Callback-флоу вместо data-auth-url: НЕТ редиректа, поэтому домен бэкенда
+  // не обязан совпадать с доменом из /setdomain — нужен только домен страницы.
+  window.kwlTgAuth = function (tgUser) {
+    var box = document.getElementById("kwl-tg");
+    if (box) box.innerHTML = '<div class="kwl-sub">Входим…</div>';
+    fetch(BACKEND + "/api/tg/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tgUser),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r && r.token) { setToken(r.token); refresh(); }
+        else if (box) box.innerHTML = '<div class="kwl-sub" style="color:#c00">Ошибка входа: ' + ((r && r.error) || "неизвестно") + "</div>";
+      })
+      .catch(function (e) {
+        if (box) box.innerHTML = '<div class="kwl-sub" style="color:#c00">Сеть недоступна</div>';
+        console.error("[loyalty]", e);
+      });
+  };
+
   function mountTelegramWidget(host) {
     if (!host) return;
-    var ret = encodeURIComponent(location.origin + location.pathname);
     var s = document.createElement("script");
     s.async = true;
     s.src = "https://telegram.org/js/telegram-widget.js?22";
     s.setAttribute("data-telegram-login", BOT_NAME);
     s.setAttribute("data-size", "large");
     s.setAttribute("data-radius", "12");
-    s.setAttribute("data-auth-url", BACKEND + "/api/tg/callback?return=" + ret);
+    s.setAttribute("data-onauth", "kwlTgAuth(user)");
     s.setAttribute("data-request-access", "write");
     host.appendChild(s);
   }
