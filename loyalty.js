@@ -8,10 +8,11 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.5.0";
+  var LOYALTY_VERSION = "0.6.0";
 
   var LS = "kw_loyalty_jwt";
-  var me = null; // {uid,name,balance,rate,txns}
+  var me = null;      // {uid,name,balance,rate,maxRedeemPct,txns}
+  var profile = null; // данные доставки из ЛК — ими заполняем корзину
 
   /* ---------- утилиты ---------- */
   function token() { try { return localStorage.getItem(LS); } catch (e) { return null; } }
@@ -64,6 +65,98 @@
       f.appendChild(inp);
     });
   }
+
+  /* ---------- АВТОЗАПОЛНЕНИЕ КОРЗИНЫ ----------
+     Форма корзины Тильды рисуется динамически, а имена полей задаёт владелец
+     магазина — поэтому опознаём поля по НЕСКОЛЬКИМ признакам (name, placeholder,
+     подпись рядом, type). Заполняем ТОЛЬКО пустые поля: то, что человек ввёл
+     руками, не трогаем. */
+  var FIELD_RULES = [
+    { key: "fullName", type: "text",  re: /(^|[^а-яё])(имя|фио|ф\.и\.о|name|fullname|получател)/i },
+    { key: "phone",    type: "tel",   re: /(телефон|phone|тел\.?|моб)/i },
+    { key: "email",    type: "email", re: /(e-?mail|почт)/i },
+    { key: "city",     type: "text",  re: /(город|city|населённ|населенн)/i },
+    { key: "postcode", type: "text",  re: /(индекс|почтовый\s*индекс|zip|postcode|postal)/i },
+    { key: "street",   type: "text",  re: /(улиц|street)/i },
+    { key: "house",    type: "text",  re: /(^|[^а-яё])(дом|house|стро)/i },
+    { key: "apartment",type: "text",  re: /(кварт|квртир|apartment|apt|офис)/i },
+    { key: "comment",  type: "text",  re: /(коммент|пожелан|примечан|comment|note)/i },
+    // общий «Адрес» одной строкой — собираем из частей
+    { key: "_address", type: "text",  re: /(адрес|address|доставк)/i },
+  ];
+
+  function addressLine() {
+    if (!profile) return "";
+    var p = [profile.postcode, profile.city, profile.street].filter(Boolean);
+    if (profile.house) p.push("д. " + profile.house);
+    if (profile.apartment) p.push("кв. " + profile.apartment);
+    return p.join(", ");
+  }
+
+  // Все текстовые подсказки про поле: name, placeholder, aria-label, подпись рядом.
+  function hintsOf(el) {
+    var h = [el.name || "", el.placeholder || "", el.getAttribute("aria-label") || ""];
+    if (el.id) {
+      var lab = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
+      if (lab) h.push(lab.textContent || "");
+    }
+    var wrap = el.closest(".t-input-group, .t-form__inputsbox > div, .t706__form div");
+    if (wrap) {
+      var t = wrap.querySelector(".t-input-title, label, .t-descr");
+      if (t) h.push(t.textContent || "");
+    }
+    return h.join(" ").slice(0, 300);
+  }
+
+  function guessKey(el) {
+    var hints = hintsOf(el);
+    if (el.type === "email") return "email";
+    if (el.type === "tel") return "phone";
+    for (var i = 0; i < FIELD_RULES.length; i++) {
+      if (FIELD_RULES[i].re.test(hints)) return FIELD_RULES[i].key;
+    }
+    return null;
+  }
+
+  function setVal(el, v) {
+    if (!v || el.value) return false;      // пустые значения и занятые поля — мимо
+    el.value = v;
+    ["input", "change", "blur"].forEach(function (t) {
+      el.dispatchEvent(new Event(t, { bubbles: true }));
+    });
+    return true;
+  }
+
+  function autofillCart() {
+    if (!profile) return;
+    var forms = document.querySelectorAll(
+      ".t706__form, .t-form, form[name*='cart' i], form[class*='t706']"
+    );
+    var filled = 0;
+    Array.prototype.forEach.call(forms, function (f) {
+      if (!f.offsetParent) return;          // форма скрыта — корзина закрыта
+      var inputs = f.querySelectorAll("input:not([type=hidden]), textarea");
+      Array.prototype.forEach.call(inputs, function (el) {
+        if (el.type === "checkbox" || el.type === "radio" || el.type === "submit") return;
+        var key = guessKey(el);
+        if (!key) return;
+        var v = key === "_address" ? addressLine() : profile[key];
+        if (setVal(el, v)) filled++;
+      });
+    });
+    if (filled) console.log("[loyalty] автозаполнено полей корзины: " + filled);
+    return filled;
+  }
+  // Корзина открывается динамически — наблюдаем за DOM и добиваем по таймеру.
+  function watchCart() {
+    try {
+      new MutationObserver(function () {
+        if (profile) autofillCart();
+      }).observe(document.body, { childList: true, subtree: true });
+    } catch (e) { /* старый браузер — хватит интервала */ }
+    setInterval(function () { if (profile) autofillCart(); }, 2000);
+  }
+  window.kwlAutofill = autofillCart;   // ручной вызов для проверки из консоли
 
   /* ---------- UI ---------- */
   function styles() {
@@ -135,7 +228,7 @@
       '<span class="kwl-x">×</span>' +
       '<div style="font-weight:600">' + (me.name ? "Привет, " + me.name : "Личный кабинет") + "</div>" +
       '<div class="kwl-bal">' + me.balance + " ★</div>" +
-      '<div class="kwl-sub">1 балл = ' + me.rate + " ₽ · оплата до 30% заказа</div>" +
+      '<div class="kwl-sub">1 балл = ' + me.rate + " ₽ · оплата до " + (me.maxRedeemPct || 50) + "% заказа</div>" +
       hist +
       '<button class="kwl-act" id="kwl-open">Открыть кабинет</button>' +
       '<span class="kwl-lnk" id="kwl-out">Выйти</span>';
@@ -255,11 +348,22 @@
   }
 
   function refresh() {
-    if (!token()) { me = null; render(); return; }
-    api("/api/me").then(function (r) {
-      me = r && !r.error ? r : null;
+    if (!token()) { me = null; profile = null; render(); return; }
+    // /api/account отдаёт всё сразу: профиль (для автозаполнения корзины) + баллы
+    api("/api/account").then(function (r) {
+      if (!r || r.error) { me = null; profile = null; render(); return; }
+      profile = r.profile || null;
+      me = {
+        uid: r.profile && r.profile.uid,
+        name: r.profile && r.profile.name,
+        balance: r.points ? r.points.balance : 0,
+        rate: r.points ? r.points.rate : 1,
+        maxRedeemPct: r.points ? r.points.maxRedeemPct : 50,
+        txns: r.points ? r.points.txns : [],
+      };
       render();
       injectCartField();
+      autofillCart();
     });
   }
 
@@ -271,6 +375,7 @@
     refresh();
     // корзина Тильды рисуется динамически — подкладываем поле периодически
     setInterval(injectCartField, 2500);
+    watchCart();   // подставляем данные доставки, когда откроется корзина
     console.log("[kniveswear-loyalty] v" + LOYALTY_VERSION + " активен");
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
