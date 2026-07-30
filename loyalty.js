@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.2.0";
+  var LOYALTY_VERSION = "0.3.0";
 
   var LS = "kw_loyalty_jwt";
   var me = null; // {uid,name,balance,rate,txns}
@@ -34,8 +34,14 @@
     });
   }
 
-  /* ---------- перехват JWT из редиректа Telegram ---------- */
+  /* ---------- перехват JWT (или ошибки) из редиректа Telegram ---------- */
   function grabTokenFromHash() {
+    var e = (location.hash || "").match(/loyalty_error=([^&]+)/);
+    if (e) {
+      console.warn("[loyalty] вход не удался:", decodeURIComponent(e[1]));
+      window.__kwlError = decodeURIComponent(e[1]);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
     var m = (location.hash || "").match(/loyalty=([^&]+)/);
     if (m) {
       setToken(decodeURIComponent(m[1]));
@@ -112,6 +118,7 @@
         '<span class="kwl-x">×</span>' +
         '<div style="font-weight:600;margin-bottom:4px">Личный кабинет</div>' +
         '<div class="kwl-sub">Войдите через Telegram — при регистрации дарим приветственные баллы.</div>' +
+        (window.__kwlError ? '<div class="kwl-sub" style="color:#c00">Вход не удался: ' + window.__kwlError + "</div>" : "") +
         '<div id="kwl-tg"></div>';
       panel.querySelector(".kwl-x").onclick = function () { panel.classList.remove("open"); };
       mountTelegramWidget(panel.querySelector("#kwl-tg"));
@@ -161,17 +168,20 @@
       });
   };
 
+  // Вход через Telegram Web Login (OpenID Connect).
+  // Legacy iframe-виджет Телеграм ЗААРХИВИРОВАЛ: oauth.telegram.org/embed отдаёт
+  // «Bot domain invalid» даже с верным /setdomain, а /auth?bot_id= — «deprecated».
+  // Теперь обычная навигация на бэкенд → страница согласия Телеграма → возврат
+  // на сайт с токеном во фрагменте (его подхватывает grabTokenFromHash).
   function mountTelegramWidget(host) {
     if (!host) return;
-    var s = document.createElement("script");
-    s.async = true;
-    s.src = "https://telegram.org/js/telegram-widget.js?22";
-    s.setAttribute("data-telegram-login", BOT_NAME);
-    s.setAttribute("data-size", "large");
-    s.setAttribute("data-radius", "12");
-    s.setAttribute("data-onauth", "kwlTgAuth(user)");
-    s.setAttribute("data-request-access", "write");
-    host.appendChild(s);
+    var ret = encodeURIComponent(location.origin + location.pathname);
+    var a = document.createElement("a");
+    a.className = "kwl-act";
+    a.style.cssText = "display:block;text-align:center;text-decoration:none;box-sizing:border-box";
+    a.href = BACKEND + "/api/tg/login?return=" + ret;
+    a.textContent = "Войти через Telegram";
+    host.appendChild(a);
   }
 
   function doRedeem() {
