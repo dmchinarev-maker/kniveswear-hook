@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.6.0";
+  var LOYALTY_VERSION = "0.6.1";
 
   var LS = "kw_loyalty_jwt";
   var me = null;      // {uid,name,balance,rate,maxRedeemPct,txns}
@@ -81,6 +81,8 @@
     { key: "house",    type: "text",  re: /(^|[^а-яё])(дом|house|стро)/i },
     { key: "apartment",type: "text",  re: /(кварт|квртир|apartment|apt|офис)/i },
     { key: "comment",  type: "text",  re: /(коммент|пожелан|примечан|comment|note)/i },
+    // «Telegram для связи» — подставляем @username, с которым человек вошёл
+    { key: "_telegram",type: "text",  re: /(telegram|телеграм|тг\b)/i },
     // общий «Адрес» одной строкой — собираем из частей
     { key: "_address", type: "text",  re: /(адрес|address|доставк)/i },
   ];
@@ -140,7 +142,10 @@
         if (el.type === "checkbox" || el.type === "radio" || el.type === "submit") return;
         var key = guessKey(el);
         if (!key) return;
-        var v = key === "_address" ? addressLine() : profile[key];
+        var v =
+          key === "_address" ? addressLine() :
+          key === "_telegram" ? (profile.username ? "@" + profile.username : "") :
+          profile[key];
         if (setVal(el, v)) filled++;
       });
     });
