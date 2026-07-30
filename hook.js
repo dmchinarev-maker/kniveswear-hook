@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.6.0";
+  const VERSION = "1.6.1";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -46,6 +46,13 @@
   const css = `
   /* убрана промо-плашка «-15% по промокоду firstblood» (Tilda-блок rec1661147731) */
   #rec1661147731{display:none!important}
+
+  /* убраны ЗАЧЁРКНУТЫЕ (старые) цены — на карточках и на странице товара */
+  .t-store__card__price_old,
+  .t-store__prod-popup__price_old,
+  .t-store__prod__price_old,
+  .js-store-price-old,
+  .js-store-prod-price-old{display:none!important}
   .kw-card{position:relative;transition:transform .22s ease}
   .kw-card:hover{transform:translateY(-3px)}
 
