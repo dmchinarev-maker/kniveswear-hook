@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.3.0";
+  var LOYALTY_VERSION = "0.4.0";
 
   var LS = "kw_loyalty_jwt";
   var me = null; // {uid,name,balance,rate,txns}
@@ -173,15 +173,67 @@
   // «Bot domain invalid» даже с верным /setdomain, а /auth?bot_id= — «deprecated».
   // Теперь обычная навигация на бэкенд → страница согласия Телеграма → возврат
   // на сайт с токеном во фрагменте (его подхватывает grabTokenFromHash).
+  // ВХОД ЧЕРЕЗ БОТА (без доменов и OIDC).
+  // Telegram заархивировал iframe-виджет («Bot domain invalid» при любом /setdomain),
+  // а новый Web Login (OIDC) отвечает «redirect_uri required» — раскатан не у всех.
+  // Поэтому: сайт берёт одноразовый код → открывает t.me/<bot>?start=<code> →
+  // юзер жмёт Start → бот привязывает аккаунт → сайт опрашивает и получает сессию.
+  var pollTimer = null;
   function mountTelegramWidget(host) {
     if (!host) return;
-    var ret = encodeURIComponent(location.origin + location.pathname);
-    var a = document.createElement("a");
-    a.className = "kwl-act";
-    a.style.cssText = "display:block;text-align:center;text-decoration:none;box-sizing:border-box";
-    a.href = BACKEND + "/api/tg/login?return=" + ret;
-    a.textContent = "Войти через Telegram";
-    host.appendChild(a);
+    var b = document.createElement("button");
+    b.className = "kwl-act";
+    b.textContent = "Войти через Telegram";
+    b.onclick = function () { startBotLogin(host, b); };
+    host.appendChild(b);
+  }
+
+  function startBotLogin(host, btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = "Открываем Telegram…";
+    fetch(BACKEND + "/api/auth/start", { method: "POST" })
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r || !r.url) throw new Error((r && r.error) || "no url");
+        window.open(r.url, "_blank", "noopener");
+        host.innerHTML =
+          '<div class="kwl-sub">Подтвердите вход в Telegram — нажмите <b>Start</b> в чате с ботом. ' +
+          'Окно не закрывайте, кабинет откроется сам.</div>' +
+          '<a class="kwl-lnk" href="' + r.url + '" target="_blank" rel="noopener">Открыть Telegram ещё раз</a>';
+        pollFor(r.code, host);
+      })
+      .catch(function (e) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Войти через Telegram";
+        host.insertAdjacentHTML("beforeend", '<div class="kwl-sub" style="color:#c00">Не вышло начать вход: ' + e.message + "</div>");
+      });
+  }
+
+  function pollFor(code, host) {
+    var tries = 0;
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () {
+      tries++;
+      if (tries > 100) { // ~5 минут
+        clearInterval(pollTimer); pollTimer = null;
+        host.insertAdjacentHTML("beforeend", '<div class="kwl-sub">Время ожидания вышло. Откройте кабинет заново.</div>');
+        return;
+      }
+      fetch(BACKEND + "/api/auth/poll?code=" + encodeURIComponent(code))
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r) return;
+          if (r.status === "ok" && r.token) {
+            clearInterval(pollTimer); pollTimer = null;
+            setToken(r.token);
+            refresh();
+          } else if (r.status === "expired" || r.status === "unknown") {
+            clearInterval(pollTimer); pollTimer = null;
+            host.insertAdjacentHTML("beforeend", '<div class="kwl-sub" style="color:#c00">Ссылка устарела, начните заново.</div>');
+          }
+        })
+        .catch(function () { /* сеть моргнула — продолжаем опрос */ });
+    }, 3000);
   }
 
   function doRedeem() {
