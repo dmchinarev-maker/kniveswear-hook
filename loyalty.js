@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.4.0";
+  var LOYALTY_VERSION = "0.5.0";
 
   var LS = "kw_loyalty_jwt";
   var me = null; // {uid,name,balance,rate,txns}
@@ -137,13 +137,31 @@
       '<div class="kwl-bal">' + me.balance + " ★</div>" +
       '<div class="kwl-sub">1 балл = ' + me.rate + " ₽ · оплата до 30% заказа</div>" +
       hist +
-      '<input class="kwl-in" id="kwl-amt" type="number" min="1" placeholder="Сколько баллов списать">' +
-      '<button class="kwl-act" id="kwl-redeem">Получить промокод</button>' +
-      '<div id="kwl-code"></div>' +
+      '<button class="kwl-act" id="kwl-open">Открыть кабинет</button>' +
       '<span class="kwl-lnk" id="kwl-out">Выйти</span>';
     panel.querySelector(".kwl-x").onclick = function () { panel.classList.remove("open"); };
     panel.querySelector("#kwl-out").onclick = function () { clearToken(); me = null; render(); };
-    panel.querySelector("#kwl-redeem").onclick = doRedeem;
+    panel.querySelector("#kwl-open").onclick = openAccount;
+  }
+
+  /* ---------- полноэкранный ЛК (account.js подгружается по требованию) ---------- */
+  function openAccount() {
+    panel.classList.remove("open");
+    withAccount(function (A) { A.open(); });
+  }
+
+  function withAccount(cb) {
+    if (window.KWL_ACCOUNT) return cb(window.KWL_ACCOUNT);
+    var s = document.createElement("script");
+    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/account.js";
+    s.onload = function () {
+      if (!window.KWL_ACCOUNT) return;
+      // мост: кабинет ходит в API через тот же токен, и обновляет баланс на кнопке
+      window.KWL_ACCOUNT.api = api;
+      window.KWL_ACCOUNT.onClose = refresh;
+      cb(window.KWL_ACCOUNT);
+    };
+    document.head.appendChild(s);
   }
 
   // Глобальный колбэк для виджета Telegram (data-onauth).
@@ -234,19 +252,6 @@
         })
         .catch(function () { /* сеть моргнула — продолжаем опрос */ });
     }, 3000);
-  }
-
-  function doRedeem() {
-    var amt = parseInt((document.getElementById("kwl-amt") || {}).value, 10);
-    var box = document.getElementById("kwl-code");
-    if (!amt || amt <= 0) { box.textContent = ""; return; }
-    box.textContent = "…";
-    api("/api/redeem", { method: "POST", body: { points: amt } }).then(function (r) {
-      if (r.error) { box.innerHTML = '<div class="kwl-sub" style="color:#c00">' + (r.error === "insufficient balance" ? "Недостаточно баллов" : r.error) + "</div>"; return; }
-      box.innerHTML = '<div class="kwl-code">' + r.code + "</div>" +
-        '<div class="kwl-sub">−' + r.rub + " ₽. Введите код в корзине при заказе.</div>";
-      refresh();
-    });
   }
 
   function refresh() {
