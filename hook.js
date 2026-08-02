@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.6.1";
+  const VERSION = "1.7.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -64,6 +64,15 @@
 
   /* тильдовский значок SALE скрыт — редкость говорит сама за себя */
   .t-store__card__mark{display:none !important}
+
+  /* ==== КНОПКА LORE на странице товара ==== */
+  .kw-lore-btn{display:inline-block;margin:22px 0 0;padding:13px 30px;
+    border:1px solid #111;background:transparent;color:#111;text-decoration:none;
+    font-family:'TildaSans',Arial,sans-serif;font-size:12px;font-weight:600;
+    letter-spacing:.2em;text-transform:uppercase;min-height:44px;line-height:20px;
+    transition:background .2s ease,color .2s ease}
+  .kw-lore-btn:hover{background:#111;color:#fff}
+  .kw-lore-btn:focus-visible{outline:2px solid #111;outline-offset:3px}
 
   /* ==== ОКНО СТАТОВ: мягкая карточка (дизайн варианта A), смыслы паспорта ==== */
   .kw-stats{margin:26px 0 8px;border:1px solid #ececec;background:#fff;
@@ -400,7 +409,35 @@
       if (existing) existing.remove();
       const st = statsFor(title);
       if (st) renderStats(info, st, title);
+      mountLore(info, title);
     });
+  }
+
+  /* ==== КНОПКА LORE: ведёт на отдельную лор-страницу вещи ====
+   * Страницы серверные (на бэкенде), поэтому у них настоящие мета-теги и
+   * микроразметка — в отличие от контента, вставленного скриптом. */
+  const LORE_BASE = "https://kniveswear-loyalty.vercel.app/lore/";
+  const LORE_SLUGS = {
+    "Сюртук": "surtuk",
+    "Пончо в клетку": "poncho-kletka",
+    "Брюки Орлок": "bryuki-orlok",
+  };
+
+  function mountLore(info, title) {
+    const slug = LORE_SLUGS[title];
+    if (!slug) return;                       // у вещи ещё нет лор-страницы
+    const old = info.querySelector(".kw-lore-btn");
+    if (old && old.dataset.for === title) return;
+    if (old) old.remove();
+    const a = document.createElement("a");
+    a.className = "kw-lore-btn";
+    a.dataset.for = title;
+    a.href = LORE_BASE + slug;
+    a.textContent = "Lore";
+    a.setAttribute("aria-label", "Лор вещи: " + title);
+    const stats = info.querySelector(".kw-stats");
+    if (stats) stats.insertAdjacentElement("beforebegin", a);
+    else info.appendChild(a);
   }
 
   /* ==== SEO: структурированная разметка и гигиена головы документа ====
