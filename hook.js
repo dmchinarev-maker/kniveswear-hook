@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.7.0";
+  const VERSION = "1.8.0";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -73,6 +73,12 @@
     transition:background .2s ease,color .2s ease}
   .kw-lore-btn:hover{background:#111;color:#fff}
   .kw-lore-btn:focus-visible{outline:2px solid #111;outline-offset:3px}
+  /* заглушка для вещей без лора */
+  .kw-lore-veil{margin-top:14px;padding:16px 18px;border-left:2px solid #d8d8d8;
+    background:#fafafa;font-family:'TildaSans',Arial,sans-serif;max-width:520px}
+  .kw-lore-veil b{display:block;font-family:Georgia,serif;font-style:italic;
+    font-weight:400;font-size:15px;color:#3c3c3c;line-height:1.5}
+  .kw-lore-veil span{display:block;margin-top:7px;font-size:12.5px;color:#8a8a8a;line-height:1.6}
 
   /* ==== ОКНО СТАТОВ: мягкая карточка (дизайн варианта A), смыслы паспорта ==== */
   .kw-stats{margin:26px 0 8px;border:1px solid #ececec;background:#fff;
@@ -236,6 +242,15 @@
   /* ==== СТАТЫ ВЕЩЕЙ: паспорт + проверка навыка (2d6 + мод против сложности).
    * match — подстрока названия (lowercase), первое совпадение побеждает. ==== */
   const STATS = [
+    // ВЫШЕ общего «сюртук» — statsFor берёт первое совпадение по подстроке
+    { match:"сюртук 2", sub:"шерсть, вторая редакция", slot:"туловище, плечи, второй заход",
+      bars:{"Резист холоду":80,"Резист жаре":18,"Ветрозащита":86,"Прочность":92,"Авторитет":97,"Резист к стирке":8},
+      pass:[["Диапазон","−18…+8 °C"],["Испытано","поздние возвращения, чужие лестницы"]],
+      check:{skill:"Авторитет",act:"Занять место, которое не предлагали",mod:5,diff:13,
+        ok:["Ты садишься. Никто не уточняет, твоё ли это место — теперь твоё.",
+            "Разговор продолжается на полтона тише. Так и было задумано."],
+        no:["Место оказалось чьим-то. Пальто не спасает от чужой фамилии на спинке стула.",
+            "Ты сел. Встал. Сделал вид, что проверял обивку."]}},
     { match:"сюртук", sub:"итальянская шерсть", slot:"туловище, плечи, эпоха",
       bars:{"Резист холоду":78,"Резист жаре":22,"Ветрозащита":84,"Прочность":90,"Авторитет":95,"Резист к стирке":8},
       pass:[["Диапазон","−15…+10 °C"],["Испытано","зима, переговорные, чужие похороны"]],
@@ -419,25 +434,50 @@
   const LORE_BASE = "https://kniveswear-loyalty.vercel.app/lore/";
   const LORE_SLUGS = {
     "Сюртук": "surtuk",
+    "Сюртук 2": "surtuk-2",
     "Пончо в клетку": "poncho-kletka",
     "Брюки Орлок": "bryuki-orlok",
   };
 
+  // Кнопка есть у ВСЕХ вещей. Написан лор — ведёт на страницу; не написан —
+  // показываем заглушку прямо на месте. Отдельные страницы-пустышки не плодим:
+  // десяток одинаковых «скоро будет» — это тонкий контент, поисковики его не любят.
   function mountLore(info, title) {
-    const slug = LORE_SLUGS[title];
-    if (!slug) return;                       // у вещи ещё нет лор-страницы
     const old = info.querySelector(".kw-lore-btn");
     if (old && old.dataset.for === title) return;
     if (old) old.remove();
-    const a = document.createElement("a");
-    a.className = "kw-lore-btn";
-    a.dataset.for = title;
-    a.href = LORE_BASE + slug;
-    a.textContent = "Lore";
-    a.setAttribute("aria-label", "Лор вещи: " + title);
+    const slug = LORE_SLUGS[title];
+    const el = document.createElement(slug ? "a" : "button");
+    el.className = "kw-lore-btn";
+    el.dataset.for = title;
+    el.textContent = "Lore";
+    el.setAttribute("aria-label", "Лор вещи: " + title);
+    if (slug) {
+      el.href = LORE_BASE + slug;
+    } else {
+      el.type = "button";
+      el.addEventListener("click", function () { loreVeil(el, title); });
+    }
     const stats = info.querySelector(".kw-stats");
-    if (stats) stats.insertAdjacentElement("beforebegin", a);
-    else info.appendChild(a);
+    if (stats) stats.insertAdjacentElement("beforebegin", el);
+    else info.appendChild(el);
+  }
+
+  const VEIL_LINES = [
+    "Лор этой вещи пока покрыт тайной.",
+    "История ещё не записана. Вещь молчит — и, кажется, нарочно.",
+    "Архив на эту вещь пуст. Либо не успели, либо не решились.",
+  ];
+
+  function loreVeil(btn, title) {
+    let box = btn.parentNode.querySelector(".kw-lore-veil");
+    if (box) { box.remove(); return; }             // повторный клик закрывает
+    box = document.createElement("div");
+    box.className = "kw-lore-veil";
+    const line = VEIL_LINES[(title.length + title.charCodeAt(0)) % VEIL_LINES.length];
+    box.innerHTML = '<b>' + line + "</b><span>Мы дописываем истории по одной. " +
+      "Пока — статы выше: они не врут.</span>";
+    btn.insertAdjacentElement("afterend", box);
   }
 
   /* ==== SEO: структурированная разметка и гигиена головы документа ====
