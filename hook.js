@@ -65,17 +65,41 @@
   /* тильдовский значок SALE скрыт — редкость говорит сама за себя */
   .t-store__card__mark{display:none !important}
 
-  /* ==== КНОПКА LORE на странице товара ==== */
-  .kw-lore-btn{display:inline-block;margin:22px 0 0;padding:13px 30px;
-    border:1px solid #111;background:transparent;color:#111;text-decoration:none;
+  /* ==== КНОПКА LORE на странице товара ====
+     Ховер — «шторка»: чернила заливают кнопку слева направо. Анимируются
+     только transform и opacity (GPU), поэтому кадры не проседают. */
+  .kw-lore-btn{position:relative;isolation:isolate;overflow:hidden;
+    display:inline-block;margin:22px 0 0;padding:14px 34px;
+    border:1px solid #111;border-radius:6px;
+    background:transparent;color:#111;text-decoration:none;cursor:pointer;
     font-family:'TildaSans',Arial,sans-serif;font-size:12px;font-weight:600;
     letter-spacing:.2em;text-transform:uppercase;min-height:44px;line-height:20px;
-    transition:background .2s ease,color .2s ease}
-  .kw-lore-btn:hover{background:#111;color:#fff}
+    transition:color .18s ease, transform .18s cubic-bezier(.23,1,.32,1),
+               box-shadow .22s ease}
+  .kw-lore-btn::before{content:"";position:absolute;inset:0;z-index:-1;background:#111;
+    transform:scaleX(0);transform-origin:left center;
+    transition:transform .28s cubic-bezier(.23,1,.32,1)}
+  .kw-lore-btn:hover{color:#fff;transform:translateY(-1px);
+    box-shadow:0 8px 18px -10px rgba(0,0,0,.55)}
+  .kw-lore-btn:hover::before{transform:scaleX(1)}
+  .kw-lore-btn:active{transform:translateY(0) scale(.985)}
   .kw-lore-btn:focus-visible{outline:2px solid #111;outline-offset:3px}
-  /* заглушка для вещей без лора */
+  /* уходит шторка вправо — выход быстрее входа */
+  .kw-lore-btn:not(:hover)::before{transform-origin:right center;transition-duration:.2s}
+
+  @media (prefers-reduced-motion: reduce){
+    /* движение убираем, СМЕНУ СОСТОЯНИЯ оставляем: кнопка всё так же заливается */
+    .kw-lore-btn{transition:color .01s linear}
+    .kw-lore-btn:hover{transform:none;box-shadow:none}
+    .kw-lore-btn::before{transition:none;transform:scaleX(1);opacity:0}
+    .kw-lore-btn:hover::before{opacity:1}
+    .kw-lore-veil{animation:none}
+  }
+  /* заглушка для вещей без лора — появляется мягко (ease-out, вход 220мс) */
   .kw-lore-veil{margin-top:14px;padding:16px 18px;border-left:2px solid #d8d8d8;
-    background:#fafafa;font-family:'TildaSans',Arial,sans-serif;max-width:520px}
+    background:#fafafa;font-family:'TildaSans',Arial,sans-serif;max-width:520px;
+    animation:kwVeil .22s cubic-bezier(.23,1,.32,1)}
+  @keyframes kwVeil{from{opacity:0;transform:translateY(-4px)}}
   .kw-lore-veil b{display:block;font-family:Georgia,serif;font-style:italic;
     font-weight:400;font-size:15px;color:#3c3c3c;line-height:1.5}
   .kw-lore-veil span{display:block;margin-top:7px;font-size:12.5px;color:#8a8a8a;line-height:1.6}
