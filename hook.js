@@ -65,38 +65,66 @@
   /* тильдовский значок SALE скрыт — редкость говорит сама за себя */
   .t-store__card__mark{display:none !important}
 
-  /* ==== КНОПКА LORE на странице товара ====
-     Ховер — «шторка»: чернила заливают кнопку слева направо. Анимируются
-     только transform и opacity (GPU), поэтому кадры не проседают. */
+  /* ==== ЛОР — ПОСЛЕДНИЙ РАЗДЕЛ ПАСПОРТА ====
+     Карточка читается сверху вниз: характеристики → проверка → лор.
+     Лор свёрнут: числа нужны всем, история — тем, кто задержался. */
+  .kw-lore{border-top:1px solid #ececec;margin:0 -26px;padding:0 26px}
   .kw-lore-btn{position:relative;isolation:isolate;overflow:hidden;
-    display:inline-block;margin:22px 0 0;padding:14px 34px;
-    border:1px solid #111;border-radius:6px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    width:100%;margin:0;padding:16px 0;
+    border:0;border-radius:6px;
     background:transparent;color:#111;text-decoration:none;cursor:pointer;
     font-family:'TildaSans',Arial,sans-serif;font-size:12px;font-weight:600;
     letter-spacing:.2em;text-transform:uppercase;min-height:44px;line-height:20px;
-    transition:color .18s ease, transform .18s cubic-bezier(.23,1,.32,1),
-               box-shadow .22s ease}
-  .kw-lore-btn::before{content:"";position:absolute;inset:0;z-index:-1;background:#111;
-    transform:scaleX(0);transform-origin:left center;
-    transition:transform .28s cubic-bezier(.23,1,.32,1)}
-  .kw-lore-btn:hover{color:#fff;transform:translateY(-1px);
-    box-shadow:0 8px 18px -10px rgba(0,0,0,.55)}
-  .kw-lore-btn:hover::before{transform:scaleX(1)}
-  .kw-lore-btn:active{transform:translateY(0) scale(.985)}
-  .kw-lore-btn:focus-visible{outline:2px solid #111;outline-offset:3px}
-  /* уходит шторка вправо — выход быстрее входа */
-  .kw-lore-btn:not(:hover)::before{transform-origin:right center;transition-duration:.2s}
+    transition:color .18s ease, transform .18s cubic-bezier(.23,1,.32,1)}
+  .kw-lore-btn>span{position:relative;z-index:1;padding-left:2px}
+  /* шеврон: единственный индикатор состояния, поворачивается на раскрытии */
+  .kw-chev{position:relative;z-index:1;width:8px;height:8px;flex:none;margin-right:2px;
+    border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+    transform:rotate(45deg) translateY(-2px);
+    transition:transform .26s cubic-bezier(.23,1,.32,1)}
+  .kw-lore.open .kw-chev{transform:rotate(-135deg) translateY(-2px)}
+  /* раскрытие: grid 0fr→1fr — единственный способ анимировать «высоту по контенту» */
+  .kw-lore-body{display:grid;grid-template-rows:0fr;
+    transition:grid-template-rows .32s cubic-bezier(.23,1,.32,1)}
+  .kw-lore.open .kw-lore-body{grid-template-rows:1fr}
+  .kw-lore-in{overflow:hidden;opacity:0;transition:opacity .2s ease}
+  .kw-lore.open .kw-lore-in{opacity:1;transition-delay:.1s}
+  .kw-lore-tag{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#555;
+    margin:0 0 14px}
+  .kw-lore-story p{font-size:14.5px;line-height:1.7;color:#333;margin:0 0 13px}
+  .kw-lore-h{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a8a8a;
+    margin:20px 0 11px;padding-top:15px;border-top:1px solid #f0f0f0}
+  .kw-lr{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:8px 0;font-size:13.5px}
+  .kw-lr .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a;padding-top:3px}
+  .kw-lr .v{color:#333;line-height:1.6}
+  .kw-draft{display:inline-block;margin-left:8px;font-style:normal;font-size:9px;
+    letter-spacing:.1em;text-transform:uppercase;color:#b3362c;border:1px solid #f0d4d0;padding:1px 6px}
+  .kw-lore-full{display:inline-block;margin:18px 0 22px;font-size:11px;letter-spacing:.13em;
+    text-transform:uppercase;color:#8a8a8a;text-decoration:none;border-bottom:1px solid #ddd;
+    padding-bottom:2px;min-height:24px}
+  .kw-lore-full:hover{color:#111;border-bottom-color:#111}
+  .kw-lore-load{font-size:13px;color:#9a9a9a;padding:4px 0 20px}
+  @media (max-width:600px){.kw-lr{grid-template-columns:1fr;gap:2px}}
+  /* ховер строки-тоггла: тонкая подсветка полосы, без заливки —
+     это строка внутри карточки, а не отдельная кнопка */
+  .kw-lore-btn::before{content:"";position:absolute;left:-26px;right:-26px;top:0;bottom:0;
+    z-index:-1;background:#fafafa;opacity:0;transition:opacity .18s ease}
+  .kw-lore-btn:hover::before{opacity:1}
+  .kw-lore-btn:hover>span{transform:translateX(2px)}
+  .kw-lore-btn>span{transition:transform .2s cubic-bezier(.23,1,.32,1)}
+  .kw-lore-btn:focus-visible{outline:2px solid #111;outline-offset:-2px}
 
   @media (prefers-reduced-motion: reduce){
-    /* движение убираем, СМЕНУ СОСТОЯНИЯ оставляем: кнопка всё так же заливается */
-    .kw-lore-btn{transition:color .01s linear}
-    .kw-lore-btn:hover{transform:none;box-shadow:none}
-    .kw-lore-btn::before{transition:none;transform:scaleX(1);opacity:0}
-    .kw-lore-btn:hover::before{opacity:1}
+    /* движение убираем, СМЕНУ СОСТОЯНИЯ оставляем: раздел всё так же открывается */
+    .kw-lore-body{transition:none}
+    .kw-lore-in{transition:none}
+    .kw-chev{transition:none}
+    .kw-lore-btn>span{transition:none}
     .kw-lore-veil{animation:none}
   }
   /* заглушка для вещей без лора — появляется мягко (ease-out, вход 220мс) */
-  .kw-lore-veil{margin-top:14px;padding:16px 18px;border-left:2px solid #d8d8d8;
+  .kw-lore-veil{margin:0 0 22px;padding:16px 18px;border-left:2px solid #d8d8d8;
     background:#fafafa;font-family:'TildaSans',Arial,sans-serif;max-width:520px;
     animation:kwVeil .22s cubic-bezier(.23,1,.32,1)}
   @keyframes kwVeil{from{opacity:0;transform:translateY(-4px)}}
@@ -409,8 +437,6 @@
     box.dataset.for = title;
     const rar = rarityFor(title), rc = RAR[rar] ? RAR[rar].tc : "#111";
     box.style.setProperty("--kw-sc", rc);
-    let num = 0;
-    for (let i = 0; i < title.length; i++) num = (num * 31 + title.charCodeAt(i)) % 97;
     const bars = Object.entries(st.bars).map(([k, v]) =>
       `<div class="kw-srow"><span class="l">${k}</span>` +
       `<span class="kw-strack"><span class="kw-sfill" style="--w:${v}%"></span></span>` +
@@ -420,7 +446,7 @@
       .concat(st.pass.map(p => `<b>${p[0]}:</b> ${p[1]}`)).join(" · ");
     box.innerHTML =
       `<h3 class="kn">${title}</h3>` +
-      `<div class="ks">${gradeLabel} · ${st.sub} · паспорт № 07/${String(num).padStart(2, "0")}</div>` +
+      `<div class="ks">${gradeLabel} · ${st.sub}</div>` +
       bars +
       `<div class="kw-foot">${foot}</div>` +
       `<div class="kw-check"><div class="kc-t">Проверка: ${st.check.skill} · 2d6+${st.check.mod} против ${st.check.diff}</div>` +
@@ -456,6 +482,7 @@
    * Страницы серверные (на бэкенде), поэтому у них настоящие мета-теги и
    * микроразметка — в отличие от контента, вставленного скриптом. */
   const LORE_BASE = "https://kniveswear-loyalty.vercel.app/lore/";
+  const LORE_API = "https://kniveswear-loyalty.vercel.app/api/lore/";
   const LORE_SLUGS = {
     "Сюртук": "surtuk",
     "Сюртук II": "surtuk-2",   // в каталоге римская цифра: с "Сюртук 2" кнопка вела на заглушку
@@ -463,28 +490,37 @@
     "Брюки Орлок": "bryuki-orlok",
   };
 
-  // Кнопка есть у ВСЕХ вещей. Написан лор — ведёт на страницу; не написан —
-  // показываем заглушку прямо на месте. Отдельные страницы-пустышки не плодим:
-  // десяток одинаковых «скоро будет» — это тонкий контент, поисковики его не любят.
+  /* ЛОР — ПОСЛЕДНИЙ РАЗДЕЛ ПАСПОРТА, а не отдельная кнопка сбоку.
+     Порядок на карточке: характеристики (скан) → проверка навыка (игра) →
+     лор (погружение, свёрнут). Разворачивается тогглом, без ухода со страницы;
+     страницы /lore/<slug> остаются для поисковиков и прямых ссылок. */
+  const loreCache = {};
+
   function mountLore(info, title) {
-    const old = info.querySelector(".kw-lore-btn");
+    const host = info.querySelector(".kw-stats") || info;
+    const old = host.querySelector(".kw-lore");
     if (old && old.dataset.for === title) return;
     if (old) old.remove();
-    const slug = LORE_SLUGS[title];
-    const el = document.createElement(slug ? "a" : "button");
-    el.className = "kw-lore-btn";
-    el.dataset.for = title;
-    el.textContent = "Lore";
-    el.setAttribute("aria-label", "Лор вещи: " + title);
-    if (slug) {
-      el.href = LORE_BASE + slug;
-    } else {
-      el.type = "button";
-      el.addEventListener("click", function () { loreVeil(el, title); });
-    }
-    const stats = info.querySelector(".kw-stats");
-    if (stats) stats.insertAdjacentElement("beforebegin", el);
-    else info.appendChild(el);
+
+    const wrap = document.createElement("div");
+    wrap.className = "kw-lore";
+    wrap.dataset.for = title;
+    const bodyId = "kwlore-" + Math.random().toString(36).slice(2, 8);
+    wrap.innerHTML =
+      '<button class="kw-lore-btn" type="button" aria-expanded="false" aria-controls="' + bodyId + '">' +
+        '<span>Lore</span><i class="kw-chev" aria-hidden="true"></i></button>' +
+      '<div class="kw-lore-body" id="' + bodyId + '"><div class="kw-lore-in"></div></div>';
+
+    const btn = wrap.querySelector(".kw-lore-btn");
+    const body = wrap.querySelector(".kw-lore-body");
+    const inner = wrap.querySelector(".kw-lore-in");
+    btn.addEventListener("click", function () {
+      const open = wrap.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) fillLore(inner, title);
+    });
+    // внутри паспорта раздел идёт последним, вне — просто добавляем
+    host.appendChild(wrap);
   }
 
   const VEIL_LINES = [
@@ -493,15 +529,46 @@
     "Архив на эту вещь пуст. Либо не успели, либо не решились.",
   ];
 
-  function loreVeil(btn, title) {
-    let box = btn.parentNode.querySelector(".kw-lore-veil");
-    if (box) { box.remove(); return; }             // повторный клик закрывает
-    box = document.createElement("div");
-    box.className = "kw-lore-veil";
+  function veilHtml(title) {
     const line = VEIL_LINES[(title.length + title.charCodeAt(0)) % VEIL_LINES.length];
-    box.innerHTML = '<b>' + line + "</b><span>Мы дописываем истории по одной. " +
-      "Пока — статы выше: они не врут.</span>";
-    btn.insertAdjacentElement("afterend", box);
+    return '<div class="kw-lore-veil"><b>' + esc(line) + "</b><span>Мы дописываем истории " +
+      "по одной. Пока — характеристики выше: они не врут.</span></div>";
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function fillLore(inner, title) {
+    if (inner.dataset.loaded === title) return;    // уже показано
+    const slug = LORE_SLUGS[title];
+    if (!slug) { inner.innerHTML = veilHtml(title); inner.dataset.loaded = title; return; }
+    if (loreCache[slug]) { paintLore(inner, loreCache[slug], title); return; }
+    inner.innerHTML = '<div class="kw-lore-load">Открываем архив…</div>';
+    fetch(LORE_API + slug)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.error) { inner.innerHTML = veilHtml(title); inner.dataset.loaded = title; return; }
+        loreCache[slug] = d;
+        paintLore(inner, d, title);
+      })
+      .catch(function () { inner.innerHTML = veilHtml(title); inner.dataset.loaded = title; });
+  }
+
+  function paintLore(inner, d, title) {
+    const story = (d.story || []).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
+    const refs = (d.refs || []).map(function (x) {
+      return '<div class="kw-lr"><span class="k">' + esc(x.label) + '</span><span class="v">' +
+        esc(x.text) + (x.draft ? '<i class="kw-draft">черновик</i>' : "") + "</span></div>";
+    }).join("");
+    inner.innerHTML =
+      (d.tagline ? '<div class="kw-lore-tag">' + esc(d.tagline) + "</div>" : "") +
+      '<div class="kw-lore-story">' + story + "</div>" +
+      (refs ? '<div class="kw-lore-h">Референсы при создании</div>' + refs : "") +
+      '<a class="kw-lore-full" href="' + esc(d.url) + '">Открыть отдельной страницей →</a>';
+    inner.dataset.loaded = title;
   }
 
   /* ==== SEO: структурированная разметка и гигиена головы документа ====
