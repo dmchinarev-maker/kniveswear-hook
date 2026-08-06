@@ -79,6 +79,16 @@
       ".kwa-rr input{flex:1;min-width:150px;border:1px solid #ddd;padding:12px;font:inherit;min-height:46px}",
       ".kwa-rr button{background:#111;color:#fff;border:0;padding:12px 22px;cursor:pointer;",
       "font:600 12px/1 TildaSans,sans-serif;letter-spacing:.12em;text-transform:uppercase;min-height:46px}",
+      /* выбор номинала: только те, на которые есть коды в пуле */
+      ".kwa-den{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}",
+      ".kwa-d{background:#fff;border:1px solid #ddd;padding:12px 16px;cursor:pointer;",
+      "font:600 15px/1 TildaSans,sans-serif;min-height:46px;display:flex;align-items:center;gap:8px;",
+      "transition:border-color .16s ease,transform .16s cubic-bezier(.23,1,.32,1)}",
+      ".kwa-d:hover{border-color:#111;transform:translateY(-1px)}",
+      ".kwa-d:active{transform:none}",
+      ".kwa-d i{font-style:normal;font-size:11.5px;color:#8a8a8a;font-weight:400}",
+      ".kwa-d:focus-visible{outline:2px solid #111;outline-offset:2px}",
+      "@media (prefers-reduced-motion:reduce){.kwa-d{transition:none}.kwa-d:hover{transform:none}}",
       ".kwa-code{margin-top:14px;background:#fff;border:1px dashed #bbb;padding:15px;text-align:center}",
       ".kwa-code b{font:700 21px/1 monospace;letter-spacing:2px;display:block;margin-bottom:6px}",
       ".kwa-code span{font-size:12px;color:#777}",
@@ -175,21 +185,38 @@
         money(data.activeCode.rub) + " · введите код в корзине при заказе</span></div>"
       : "";
 
+    // Номиналы, на которые в пуле РЕАЛЬНО есть коды. Свободного ввода нет
+    // намеренно: иначе покупатель списал бы баллы под сумму, кода на которую
+    // не существует.
+    var denoms = (data.denominations || []).filter(function (d) {
+      return d <= data.points.balance;
+    });
+    var mine = (data.myCodes || []).map(function (c) {
+      return '<div class="kwa-code"><b>' + esc(c.code) + "</b><span>Скидка " + money(c.rub) +
+        " · введите код в корзине</span></div>";
+    }).join("");
+
+    var picker = denoms.length
+      ? '<div class="kwa-den">' + denoms.map(function (d) {
+          return '<button class="kwa-d" data-r="' + d + '">' + d + " ★<i>−" + money(d) + "</i></button>";
+        }).join("") + "</div>"
+      : '<div class="kwa-sub">' + (data.points.balance > 0
+          ? "Пока нет кодов подходящего номинала — вернитесь чуть позже."
+          : "Накопите баллы, чтобы обменять их на скидку.") + "</div>";
+
     el.innerHTML =
       (rows || '<div class="kwa-empty">Пока пусто. Баллы придут после первой покупки.</div>') +
       '<div class="kwa-redeem"><h4>Потратить баллы</h4>' +
         "<p>Обменяйте баллы на промокод — его нужно ввести в корзине. " +
         "Оплатить баллами можно до " + data.points.maxRedeemPct + "% суммы заказа.</p>" +
-        '<div class="kwa-rr">' +
-          '<input id="kwa-amt" type="number" min="1" max="' + data.points.balance +
-            '" placeholder="Сколько баллов" inputmode="numeric">' +
-          '<button id="kwa-redeem-btn">Получить код</button>' +
-        "</div>" +
-        active +
+        picker +
+        mine + active +
         '<div class="kwa-note" id="kwa-rnote"></div>' +
       "</div>";
 
-    el.querySelector("#kwa-redeem-btn").onclick = doRedeem;
+    Array.prototype.forEach.call(el.querySelectorAll(".kwa-d"), function (b) {
+      b.onclick = function () { doRedeem(parseInt(b.dataset.r, 10)); };
+    });
   }
 
   function renderOrders(el) {
@@ -255,19 +282,19 @@
     });
   }
 
-  function doRedeem() {
-    var amt = parseInt((root.querySelector("#kwa-amt") || {}).value, 10);
+  function doRedeem(amt) {
     var note = root.querySelector("#kwa-rnote");
     note.className = "kwa-note";
-    if (!amt || amt <= 0) { note.className = "kwa-note err"; note.textContent = "Укажите количество баллов"; return; }
+    if (!amt || amt <= 0) { note.className = "kwa-note err"; note.textContent = "Выберите номинал"; return; }
     note.textContent = "Выпускаем код…";
     A.api("/api/redeem", { method: "POST", body: { points: amt } }).then(function (r) {
-      if (r && r.code) { note.textContent = ""; A.reload(); }
-      else {
-        note.className = "kwa-note err";
-        note.textContent = r && r.error === "insufficient balance" ? "Недостаточно баллов" :
-          "Не вышло: " + ((r && r.error) || "ошибка сети");
-      }
+      if (r && r.code) { note.textContent = ""; A.reload(); return; }
+      note.className = "kwa-note err";
+      note.textContent =
+        r && r.error === "insufficient balance" ? "Недостаточно баллов" :
+        r && r.error === "no code for this amount" ? "Коды этого номинала закончились" :
+        r && r.error === "code was taken, try again" ? "Код только что забрали, попробуйте ещё раз" :
+        "Не вышло: " + ((r && r.error) || "ошибка сети");
     });
   }
 
