@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.7.0";
+  var LOYALTY_VERSION = "0.7.1";
 
   var LS = "kw_loyalty_jwt";
   var me = null;      // {uid,name,balance,rate,maxRedeemPct,txns}
@@ -155,8 +155,11 @@
   /* ВЫБОР ПВЗ OZON — грузим модуль по требованию, когда корзина открылась.
      Не зависит от входа в ЛК: доставку выбирает любой покупатель. */
   function mountPvz() {
+    // ⚠️ Форма заказа в корзине Тильды имеет класс .t-form, а НЕ .t706__form —
+    // t706 это само окно корзины. Ищем форму ВНУТРИ окна, иначе цепляемся
+    // к постороннему .t-form (подписка в подвале) или не находим ничего.
     var form = null;
-    var forms = document.querySelectorAll(".t706__form, form[class*='t706']");
+    var forms = document.querySelectorAll(".t706 form, .t706__cartwin-content form, .t706__form");
     Array.prototype.forEach.call(forms, function (f) { if (!form && f.offsetParent) form = f; });
     if (!form || form.querySelector(".kwp")) return;
 

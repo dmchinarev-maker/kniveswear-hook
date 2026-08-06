@@ -217,10 +217,16 @@
     styles();
     var box = document.createElement("div");
     box.className = "kwp";
-    // ставим перед кнопкой отправки, если нашли её, иначе в конец формы
-    var submit = form.querySelector('[type=submit], .t-submit, .t706__form-bottom');
-    if (submit && submit.parentNode) submit.parentNode.insertBefore(box, submit);
-    else form.appendChild(box);
+    // Ставим перед кнопкой оплаты: доставку выбирают ДО оплаты, а не после.
+    // Кнопка может быть обёрнута, поэтому поднимаемся до прямого ребёнка формы.
+    var submit = form.querySelector('[type=submit], .t-submit, .t706__form-bottom, .t-form__submit');
+    if (submit) {
+      var anchor = submit;
+      while (anchor.parentNode && anchor.parentNode !== form) anchor = anchor.parentNode;
+      form.insertBefore(box, anchor);
+    } else {
+      form.appendChild(box);
+    }
 
     chosen = loadChoice();
     render(box, form);
