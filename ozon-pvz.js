@@ -11,17 +11,17 @@
 
    ⚠️ Модель данных Ozon: point/list отдаёт ВСЕ 92 000 пунктов страны и только
    координаты, без адресов; адреса приходят отдельным методом пачками по 100.
-   Поэтому выбор идёт в два шага — город, затем пункт: бэкенд находит
-   ближайшие точки к городу и отдаёт их уже с адресами. */
+   Поэтому вся страна один раз выгружена в нашу базу, а здесь просто поиск по
+   адресу: списка городов у Ozon нет и быть не может, их тысячи. */
 (function () {
   "use strict";
 
   var P = (window.KWL_PVZ = window.KWL_PVZ || {});
   var BACKEND = "https://kniveswear-loyalty.vercel.app";
-  var points = null;      // пункты выбранного города
-  var cities = null;      // список городов
-  var city = null;        // выбранный город
+  var points = null;      // найденные пункты
   var chosen = null;      // выбранный пункт
+  var timer = null;       // антидребезг ввода
+  var lastQ = "";
   var LS = "kw_pvz_choice";
 
   /* ---------- утилиты ---------- */
@@ -77,19 +77,13 @@
   }
 
   /* ---------- данные ---------- */
-  // Список пунктов у Ozon — 92 000 точек с одними координатами, адреса
-  // приходят отдельным методом. Поэтому подбор идёт ПО ГОРОДУ: бэкенд находит
-  // ближайшие точки и отдаёт уже с адресами.
-  function load(c) {
-    var url = BACKEND + "/api/ozon/points" + (c ? "?city=" + encodeURIComponent(c) : "");
-    return fetch(url)
+  // Ищем по всей стране: строка запроса уходит на бэкенд, тот шарит по адресам
+  // собственной выгрузки. Меньше трёх букв не ищем — вернётся пол-России.
+  function search(q) {
+    return fetch(BACKEND + "/api/ozon/points?q=" + encodeURIComponent(q))
       .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d && d.cities) cities = d.cities;
-        if (c) { points = (d && d.points) || []; city = c; }
-        return d;
-      })
-      .catch(function () { if (c) points = []; return {}; });
+      .then(function (d) { points = (d && d.points) || []; return d; })
+      .catch(function () { points = []; return {}; });
   }
 
   /* ---------- запись выбора в форму ---------- */
@@ -126,97 +120,59 @@
         '<div class="kwp-h"><b>Доставка Ozon</b><em>пункт выдачи</em></div>' +
         '<div class="kwp-sel"><div class="t"><div class="a">' + esc(chosen.address) + "</div>" +
         '<div class="m">' + esc(chosen.name) +
-          (chosen.distKm != null ? " · " + chosen.distKm + " км от центра" : "") +
           (chosen.fitting ? " · есть примерочная" : "") + "</div></div>" +
         '<button class="kwp-chg" type="button">Изменить</button></div>';
       box.querySelector(".kwp-chg").onclick = function () {
-        chosen = null; saveChoice(null); render(box, form);
+        chosen = null; points = null; lastQ = ""; saveChoice(null); render(box, form);
       };
       writeToForm(form, chosen);
       return;
     }
 
-    // 2) город не выбран — показываем города
-    if (!city) {
-      box.innerHTML =
-        '<div class="kwp-h"><b>Доставка Ozon</b><em>выберите город</em></div>' +
-        '<div class="kwp-body">' +
-          '<input class="kwp-q" type="text" placeholder="Начните вводить город" aria-label="Город">' +
-          '<div class="kwp-list"></div>' +
-        "</div>";
-      var qc = box.querySelector(".kwp-q");
-      var lc = box.querySelector(".kwp-list");
-      function drawCities(f) {
-        var q = (f || "").trim().toLowerCase();
-        var rows = (cities || []).filter(function (c) {
-          return !q || c.toLowerCase().indexOf(q) !== -1;
-        });
-        lc.innerHTML = rows.length
-          ? rows.map(function (c) {
-              return '<button class="kwp-i" type="button" data-c="' + esc(c) + '"><span class="a">' + esc(c) + "</span></button>";
-            }).join("")
-          : '<div class="kwp-none">Пока доступны только крупные города. Напишите нам, добавим ваш.</div>';
-        Array.prototype.forEach.call(lc.querySelectorAll(".kwp-i"), function (b) {
-          b.onclick = function () {
-            lc.innerHTML = '<div class="kwp-none">Ищем пункты…</div>';
-            load(b.dataset.c).then(function () { render(box, form); });
-          };
-        });
-      }
-      qc.addEventListener("input", function () { drawCities(qc.value); });
-      if (!cities) { lc.innerHTML = '<div class="kwp-none">Загружаем города…</div>'; load(null).then(function(){ drawCities(""); }); }
-      else drawCities("");
-      return;
-    }
-
-    // 3) город выбран — показываем пункты
+    // 2) поиск по всей стране
     box.innerHTML =
-      '<div class="kwp-h"><b>Доставка Ozon</b><em>' + esc(city) + " · " + (points ? points.length : 0) + " пунктов</em></div>" +
+      '<div class="kwp-h"><b>Доставка Ozon</b><em>пункты по всей России</em></div>' +
       '<div class="kwp-body">' +
-        '<input class="kwp-q" type="text" placeholder="Улица или ориентир" aria-label="Поиск пункта">' +
+        '<input class="kwp-q" type="text" placeholder="Город и улица: Казань Баумана" aria-label="Поиск пункта выдачи" value="' + esc(lastQ) + '">' +
         '<div class="kwp-list"></div>' +
-        '<button class="kwp-chg" type="button" style="padding-left:0">Другой город</button>' +
       "</div>";
     var q = box.querySelector(".kwp-q");
     var list = box.querySelector(".kwp-list");
-    box.querySelector(".kwp-chg").onclick = function () {
-      city = null; points = null; render(box, form);
-    };
 
-    function draw(f) {
-      var s2 = (f || "").trim().toLowerCase();
-      var rows = (points || []).filter(function (p) {
-        return !s2 || (p.address + " " + p.name).toLowerCase().indexOf(s2) !== -1;
-      });
-      if (!rows.length) {
-        list.innerHTML = '<div class="kwp-none">' +
-          (points && points.length ? "Ничего не нашлось по запросу." : "В этом городе пунктов не нашлось.") + "</div>";
+    function draw() {
+      if (!points) { list.innerHTML = ""; return; }
+      if (!points.length) {
+        list.innerHTML = '<div class="kwp-none">Ничего не нашлось. Попробуйте только город или только улицу.</div>';
         return;
       }
-      // В Москве пунктов сотни. Рисуем ближайшие, остальные ищутся строкой:
-      // длинный список тормозит прокрутку на телефоне и всё равно нечитаем.
-      var VISIBLE = 40;
-      var shown = rows.slice(0, VISIBLE);
-      list.innerHTML = shown.map(function (p, i) {
+      list.innerHTML = points.map(function (p, i) {
         return '<button class="kwp-i" type="button" data-i="' + i + '">' +
           '<span class="a">' + esc(p.address) + "</span>" +
-          '<span class="m">' + (p.distKm != null ? p.distKm + " км от центра" : "") +
-            (p.fitting ? " · примерочная" : "") + "</span></button>";
-      }).join("") +
-      (rows.length > VISIBLE
-        ? '<div class="kwp-none">Показаны ближайшие ' + VISIBLE + " из " + rows.length +
-          ". Введите улицу, чтобы найти нужный.</div>"
-        : "");
+          '<span class="m">' + (p.fitting ? "есть примерочная" : esc(p.name)) + "</span></button>";
+      }).join("");
       Array.prototype.forEach.call(list.querySelectorAll(".kwp-i"), function (b) {
         b.onclick = function () {
-          chosen = shown[parseInt(b.dataset.i, 10)];
+          chosen = points[parseInt(b.dataset.i, 10)];
           saveChoice(chosen);
           render(box, form);
         };
       });
     }
-    q.addEventListener("input", function () { draw(q.value); });
-    draw("");
+
+    q.addEventListener("input", function () {
+      lastQ = q.value;
+      clearTimeout(timer);
+      var v = q.value.trim();
+      if (v.length < 3) { points = null; list.innerHTML = '<div class="kwp-none">Введите город или улицу.</div>'; return; }
+      list.innerHTML = '<div class="kwp-none">Ищем…</div>';
+      // Антидребезг: без него каждая буква уходила бы отдельным запросом.
+      timer = setTimeout(function () {
+        search(v).then(function () { if (q.value.trim() === v) draw(); });
+      }, 280);
+    });
+
+    if (lastQ.trim().length >= 3 && points) draw();
+    else list.innerHTML = '<div class="kwp-none">Введите город или улицу.</div>';
   }
 
   /* ---------- монтирование в корзину ---------- */
