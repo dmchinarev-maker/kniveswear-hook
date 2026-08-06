@@ -193,15 +193,23 @@
           (points && points.length ? "Ничего не нашлось по запросу." : "В этом городе пунктов не нашлось.") + "</div>";
         return;
       }
-      list.innerHTML = rows.map(function (p, i) {
+      // В Москве пунктов сотни. Рисуем ближайшие, остальные ищутся строкой:
+      // длинный список тормозит прокрутку на телефоне и всё равно нечитаем.
+      var VISIBLE = 40;
+      var shown = rows.slice(0, VISIBLE);
+      list.innerHTML = shown.map(function (p, i) {
         return '<button class="kwp-i" type="button" data-i="' + i + '">' +
           '<span class="a">' + esc(p.address) + "</span>" +
           '<span class="m">' + (p.distKm != null ? p.distKm + " км от центра" : "") +
             (p.fitting ? " · примерочная" : "") + "</span></button>";
-      }).join("");
+      }).join("") +
+      (rows.length > VISIBLE
+        ? '<div class="kwp-none">Показаны ближайшие ' + VISIBLE + " из " + rows.length +
+          ". Введите улицу, чтобы найти нужный.</div>"
+        : "");
       Array.prototype.forEach.call(list.querySelectorAll(".kwp-i"), function (b) {
         b.onclick = function () {
-          chosen = rows[parseInt(b.dataset.i, 10)];
+          chosen = shown[parseInt(b.dataset.i, 10)];
           saveChoice(chosen);
           render(box, form);
         };
