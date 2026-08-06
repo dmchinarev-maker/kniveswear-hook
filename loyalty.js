@@ -8,7 +8,7 @@
   var ENABLED = true;
   var BACKEND = "https://kniveswear-loyalty.vercel.app"; // боевой бэкенд (Vercel, funwithknives)
   var BOT_NAME = "kniveswearbot";                        // @kniveswearbot — в BotFather /setdomain kniveswear.ru
-  var LOYALTY_VERSION = "0.6.1";
+  var LOYALTY_VERSION = "0.7.0";
 
   var LS = "kw_loyalty_jwt";
   var me = null;      // {uid,name,balance,rate,maxRedeemPct,txns}
@@ -152,14 +152,32 @@
     if (filled) console.log("[loyalty] автозаполнено полей корзины: " + filled);
     return filled;
   }
+  /* ВЫБОР ПВЗ OZON — грузим модуль по требованию, когда корзина открылась.
+     Не зависит от входа в ЛК: доставку выбирает любой покупатель. */
+  function mountPvz() {
+    var form = null;
+    var forms = document.querySelectorAll(".t706__form, form[class*='t706']");
+    Array.prototype.forEach.call(forms, function (f) { if (!form && f.offsetParent) form = f; });
+    if (!form || form.querySelector(".kwp")) return;
+
+    if (window.KWL_PVZ) { window.KWL_PVZ.mount(form); return; }
+    if (window.__kwPvzLoading) return;
+    window.__kwPvzLoading = true;
+    var s = document.createElement("script");
+    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/ozon-pvz.js";
+    s.onload = function () { if (window.KWL_PVZ) window.KWL_PVZ.mount(form); };
+    document.head.appendChild(s);
+  }
+
   // Корзина открывается динамически — наблюдаем за DOM и добиваем по таймеру.
   function watchCart() {
     try {
       new MutationObserver(function () {
         if (profile) autofillCart();
+        mountPvz();
       }).observe(document.body, { childList: true, subtree: true });
     } catch (e) { /* старый браузер — хватит интервала */ }
-    setInterval(function () { if (profile) autofillCart(); }, 2000);
+    setInterval(function () { if (profile) autofillCart(); mountPvz(); }, 2000);
   }
   window.kwlAutofill = autofillCart;   // ручной вызов для проверки из консоли
 
