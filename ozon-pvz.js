@@ -86,6 +86,33 @@
       .catch(function () { points = []; return {}; });
   }
 
+  /* ---------- поле адреса ---------- */
+  // Ищем видимое поле доставки по имени, подсказке и подписи над ним.
+  function findAddress(form) {
+    var found = null;
+    var fields = form.querySelectorAll("input:not([type=hidden]), textarea");
+    Array.prototype.forEach.call(fields, function (el) {
+      if (found) return;
+      var hint = (el.name || "") + " " + (el.placeholder || "");
+      var wrap = el.closest(".t-input-group");
+      if (wrap) { var t = wrap.querySelector(".t-input-title"); if (t) hint += " " + t.textContent; }
+      if (/адрес|address|доставк/i.test(hint)) found = el;
+    });
+    return found;
+  }
+
+  // ⚠️ Поле НЕ УДАЛЯЕМ, а прячем: адрес в него по-прежнему пишется из выбранного
+  // пункта, иначе заказ в Тильде придёт вообще без адреса доставки. Заодно
+  // снимаем обязательность — скрытое обязательное поле не даст отправить форму.
+  function hideAddress(form) {
+    var addr = findAddress(form);
+    if (!addr) return;
+    addr.required = false;
+    addr.removeAttribute("required");
+    var wrap = addr.closest(".t-input-group") || addr.parentNode;
+    if (wrap && wrap !== form) wrap.style.display = "none";
+  }
+
   /* ---------- запись выбора в форму ---------- */
   function writeToForm(form, p) {
     var hid = form.querySelector('input[name="ozon_point"]');
@@ -96,16 +123,9 @@
     }
     hid.value = p ? p.id : "";
 
-    // Адрес пункта — в видимое поле доставки, чтобы заказ читался и в Тильде.
-    var addr = null;
-    var fields = form.querySelectorAll("input:not([type=hidden]), textarea");
-    Array.prototype.forEach.call(fields, function (el) {
-      if (addr) return;
-      var hint = (el.name || "") + " " + (el.placeholder || "");
-      var wrap = el.closest(".t-input-group");
-      if (wrap) { var t = wrap.querySelector(".t-input-title"); if (t) hint += " " + t.textContent; }
-      if (/адрес|address|доставк/i.test(hint)) addr = el;
-    });
+    // Адрес пункта пишем в (скрытое) поле доставки — заказ должен читаться
+    // и в самой Тильде, без похода в наш бэкенд.
+    var addr = findAddress(form);
     if (addr && p) {
       addr.value = "Ozon, " + p.address + " (пункт выдачи)";
       ["input", "change"].forEach(function (t) { addr.dispatchEvent(new Event(t, { bubbles: true })); });
@@ -191,6 +211,11 @@
     } else {
       form.appendChild(box);
     }
+
+    // Адрес больше не вводят руками: его задаёт выбранный пункт выдачи.
+    // Тильда перерисовывает корзину, поэтому повторяем несколько раз.
+    hideAddress(form);
+    [300, 900, 2000].forEach(function (t) { setTimeout(function () { hideAddress(form); }, t); });
 
     chosen = loadChoice();
     render(box, form);
