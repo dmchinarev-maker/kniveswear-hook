@@ -195,6 +195,39 @@
     else list.innerHTML = '<div class="kwp-none">Введите город или улицу.</div>';
   }
 
+  /* ---------- страховка: черновик заказа ---------- */
+  // ⚠️ ВЫБРАННЫЙ ПВЗ ДОЛЖЕН ПЕРЕЖИТЬ СБОЙ ИНТЕГРАЦИИ. До бэкенда он доезжает
+  // только вебхуком Тильды, и когда вебхук не настроен, данные теряются: заказ
+  // приходит письмом, а куда везти — знает лишь строка в поле адреса. Так и
+  // случилось с первым живым заказом. Поэтому в момент оформления шлём короткий
+  // черновик напрямую. Он ничего не запускает, просто остаётся в базе.
+  function sendDraft(form, p) {
+    try {
+      var val = function (re) {
+        var el = null;
+        Array.prototype.forEach.call(
+          form.querySelectorAll("input:not([type=hidden]), textarea"), function (i) {
+            if (!el && re.test((i.name || "") + " " + (i.placeholder || ""))) el = i;
+          });
+        return el ? el.value : "";
+      };
+      var total = document.querySelector(".t706__cartwin-prodamount-wrap, .t706__cartwin-totalamount-wrap");
+      fetch(BACKEND + "/api/order/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,           // запрос переживёт уход со страницы на оплату
+        body: JSON.stringify({
+          pointId: p ? p.id : "",
+          address: p ? p.address : "",
+          name: val(/имя|name/i),
+          email: val(/mail|почт/i),
+          phone: val(/тел|phone/i),
+          total: total ? total.innerText.replace(/\s+/g, " ").trim() : "",
+        }),
+      }).catch(function () { /* страховка не должна мешать оплате */ });
+    } catch (e) { /* тем более не должна ронять корзину */ }
+  }
+
   /* ---------- монтирование в корзину ---------- */
   P.mount = function (form) {
     if (!form || form.querySelector(".kwp")) return;
@@ -219,5 +252,12 @@
 
     chosen = loadChoice();
     render(box, form);
+
+    // Черновик уходит по нажатию «оформить»: раньше нельзя (покупатель ещё
+    // правит поля), позже — некуда, страница уже уходит на оплату.
+    if (!form.__kwDraftHooked) {
+      form.__kwDraftHooked = true;
+      form.addEventListener("submit", function () { sendDraft(form, chosen); });
+    }
   };
 })();
