@@ -661,10 +661,74 @@
       });
   }
 
+  /**
+   * КАТАЛОГ В МАШИННОМ ВИДЕ.
+   *
+   * ⚠️ ДЛЯ ПАРСЕРА КАТАЛОГА У НАС НЕ БЫЛО НИЧЕГО. Product-разметка есть только
+   * у ОТКРЫТОЙ карточки товара, а на витрине краулер видел строку вида
+   * «Сюртук 17 200р.» — то есть текст, из которого цену и ссылку надо угадывать.
+   * LLM-краулеры (crawl4ai и прочие) в первую очередь читают structured data,
+   * поэтому весь каталог отдаём списком: имя, цена, валюта, наличие, ссылка,
+   * картинка.
+   *
+   * ⚠️ Список ПЕРЕСОБИРАЕТСЯ при догрузке. Кнопка «load more» добавляет
+   * карточки, и разметка, снятая один раз на старте, соврала бы о размере
+   * каталога. Поэтому пишем количество в dataset и обновляем, когда оно
+   * изменилось.
+   */
+  function seoCatalog() {
+    const cards = document.querySelectorAll(".t-store__card");
+    if (!cards.length) return;
+    const old = document.getElementById("kw-ld-catalog");
+    if (old && old.dataset.count === String(cards.length)) return;
+
+    const items = [];
+    cards.forEach(function (card, i) {
+      const name = titleOf(card);
+      if (!name) return;
+      const priceEl = card.querySelector(".t-store__card__price-value, .js-store-prod-price-value");
+      const price = priceEl ? priceEl.textContent.replace(/\D/g, "") : "";
+      const link = card.querySelector("a[href]");
+      const img = card.querySelector("img[src]");
+      const prod = {
+        "@type": "Product",
+        "name": name,
+        "brand": { "@type": "Brand", "name": "Knives" },
+        "offers": {
+          "@type": "Offer",
+          "priceCurrency": "RUB",
+          "availability": "https://schema.org/InStock"
+        }
+      };
+      if (price) prod.offers.price = price;
+      if (link) prod.offers.url = link.href;
+      if (img) prod.image = [img.src];
+      const st = statsFor(name);
+      if (st && st.sub) prod.description = name + " — " + st.sub + ". Бренд Knives, Москва.";
+      items.push({ "@type": "ListItem", "position": i + 1, "item": prod });
+    });
+    if (!items.length) return;
+
+    const ld = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Каталог Knives",
+      "numberOfItems": items.length,
+      "itemListElement": items
+    };
+    const s = old || document.createElement("script");
+    s.type = "application/ld+json";
+    s.id = "kw-ld-catalog";
+    s.dataset.count = String(cards.length);
+    s.textContent = JSON.stringify(ld);
+    if (!old) document.head.appendChild(s);
+  }
+
   function seoPatch() {
     seoCanonical();
     seoOrg();
     seoProduct();
+    seoCatalog();
     seoAlts();
   }
 
