@@ -689,7 +689,14 @@
       const priceEl = card.querySelector(".t-store__card__price-value, .js-store-prod-price-value");
       const price = priceEl ? priceEl.textContent.replace(/\D/g, "") : "";
       const link = card.querySelector("a[href]");
-      const img = card.querySelector("img[src]");
+      // ⚠️ Картинки товара у Тильды — ФОН дива, а не <img>: тег есть не всегда,
+      // а путь лежит в data-original (ленивая загрузка) или в style.
+      const bg = card.querySelector(".t-store__card__bgimg, [data-original]");
+      let imgUrl = bg ? bg.getAttribute("data-original") : "";
+      if (!imgUrl && bg && bg.style.backgroundImage) {
+        const m = bg.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+        if (m) imgUrl = m[1];
+      }
       const prod = {
         "@type": "Product",
         "name": name,
@@ -702,7 +709,7 @@
       };
       if (price) prod.offers.price = price;
       if (link) prod.offers.url = link.href;
-      if (img) prod.image = [img.src];
+      if (imgUrl) prod.image = [imgUrl];
       const st = statsFor(name);
       if (st && st.sub) prod.description = name + " — " + st.sub + ". Бренд Knives, Москва.";
       items.push({ "@type": "ListItem", "position": i + 1, "item": prod });
