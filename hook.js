@@ -597,6 +597,72 @@
     document.head.appendChild(s);
   }
 
+  /* ==== СОСТАВ, РАЗМЕРЫ И УХОД ====
+   *
+   * ⚠️ ОТДЕЛЬНЫХ ПОЛЕЙ ПОД ЭТО У ТИЛЬДЫ НЕТ. Состав написан прозой внутри
+   * описания («Итальянская шерсть, сто процентов»), уход — строкой в конце.
+   * Поэтому вытаскиваем из текста, а НЕ из игровых статов: те (Авторитет 95,
+   * «Радиус драмы 3,5 м») придуманы для карточки и в машинной разметке были бы
+   * ложными характеристиками товара.
+   */
+  // ⚠️ НАЧАЛО СЛОВА ОБЯЗАТЕЛЬНО. Без этого «льн» ловится в «нормаЛЬНая», и в
+  // состав уезжает случайная фраза из описания.
+  const FIBRES = /(^|[^а-яёa-z])(шерст|хлоп|виск|льн|лён|полиэстер|акрил|кашемир|вельвет|атлас|джерси|трикотаж|шёлк|шелк|замш|кожа)/i;
+
+  function sentences(text) {
+    // Без lookbehind: старые Safari роняют весь скрипт на этапе разбора.
+    return text.split(/[\n.]+/).map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 4; });
+  }
+
+  /**
+   * ⚠️ СМОТРИМ ТОЛЬКО ПЕРВОЕ ПРЕДЛОЖЕНИЕ АБЗАЦА. Состав у нас всегда стоит
+   * первым («Итальянская шерсть, сто процентов. Легче пальтовой ткани…»), а
+   * дальше идёт проза, где ткань упоминается вскользь — и она бы засоряла поле.
+   */
+  // Абзац может начинаться и без названия волокна: «Сшиты из премиальной ткани
+  // от Хьюго русскими портными» — это тоже состав, просто без имени нити.
+  const MAT_HINT = /^(материал|состав|ткань|сшит|сшито|сшиты|сшит[аи]я|выполнен)/i;
+
+  function materialFrom(text) {
+    const hits = [];
+    text.split(/\n+/).forEach(function (line) {
+      const s = line.trim().split(/\.\s|\.$/)[0].trim();
+      // 200 символов, а не 120: «Элегантные брюки… из лёгкого итальянского
+      // вельвета… с геометричным принтом» — состав в конце длинной фразы.
+      if (s.length > 4 && s.length <= 200 && (FIBRES.test(s) || MAT_HINT.test(s)) &&
+          hits.indexOf(s) < 0)
+        hits.push(s);
+    });
+    return hits.slice(0, 3).join(". ");
+  }
+
+  function careFrom(text) {
+    let care = "";
+    sentences(text).forEach(function (s) {
+      if (!care && /^уход/i.test(s)) care = s.replace(/^уход\s*[:—-]?\s*/i, "");
+    });
+    return care;
+  }
+
+  /** Варианты товара: размер и цвет лежат в блоках редакций Тильды. */
+  function prodOptions(info) {
+    const out = [];
+    info.querySelectorAll(".js-product-edition-option").forEach(function (o) {
+      const nameEl = o.querySelector(".js-product-edition-option-name");
+      const label = nameEl ? nameEl.textContent.trim().replace(/:$/, "") : "";
+      const vals = [];
+      // Тильда рисует варианты либо селектом, либо кнопками — берём оба.
+      o.querySelectorAll("select option, .js-product-edition-option-item, .t-product__option-item")
+        .forEach(function (v) {
+          const t = (v.textContent || "").trim();
+          if (t && vals.indexOf(t) < 0) vals.push(t);
+        });
+      if (label && vals.length) out.push({ label: label, values: vals });
+    });
+    return out;
+  }
+
   function seoProduct() {
     const info = document.querySelector(".t-store__prod-popup__info");
     if (!info) return;
@@ -624,16 +690,40 @@
       "@type": "Product",
       "name": name,
       "brand": { "@type": "Brand", "name": "Knives" },
-      "description": desc.slice(0, 300),
+      // ⚠️ Описание НЕ режем под сниппет: у нас в нём весь смысл вещи — история
+      // фасона, состав, крой. Ради этого текста краулер сюда и приходит.
+      "description": desc.slice(0, 5000),
       "offers": {
         "@type": "Offer",
         "priceCurrency": "RUB",
         "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition",
+        "seller": { "@type": "Organization", "name": "Knives" },
         "url": location.origin + location.pathname
       }
     };
     if (price) ld.offers.price = price;
     if (img) ld.image = [img];
+
+    // innerText, а не textContent: разбор состава опирается на абзацы, а
+    // textContent склеивает их в одну строку.
+    const full = descEl ? (descEl.innerText || descEl.textContent) : desc;
+    const mat = materialFrom(full);
+    if (mat) ld.material = mat;
+    const care = careFrom(full);
+    const extra = [];
+    if (care) extra.push({ "@type": "PropertyValue", "name": "Уход", "value": care });
+    prodOptions(info).forEach(function (o) {
+      if (/размер/i.test(o.label)) ld.size = o.values;
+      else if (/цвет/i.test(o.label)) ld.color = o.values.join(", ");
+      else extra.push({ "@type": "PropertyValue", "name": o.label, "value": o.values.join(", ") });
+    });
+    if (extra.length) ld.additionalProperty = extra;
+    if (/шь[её]м в россии|сшито в россии|производство: ?росси/i.test(full))
+      ld.countryOfOrigin = { "@type": "Country", "name": "Россия" };
+    const skuEl = info.querySelector(".js-store-prod-sku, .t-store__prod-popup__sku");
+    const sku = skuEl ? skuEl.textContent.replace(/sku:?/i, "").trim() : "";
+    if (sku) ld.sku = sku;
     const s = document.createElement("script");
     s.type = "application/ld+json";
     s.id = "kw-ld-product";
@@ -708,7 +798,9 @@
         }
       };
       if (price) prod.offers.price = price;
-      if (link) prod.offers.url = link.href;
+      // ⚠️ Тильда кладёт в карточки http-ссылки; в разметке это лишний редирект
+      // и повод для краулера считать страницу другой.
+      if (link) prod.offers.url = link.href.replace(/^http:/, "https:");
       if (imgUrl) prod.image = [imgUrl];
       const st = statsFor(name);
       if (st && st.sub) prod.description = name + " — " + st.sub + ". Бренд Knives, Москва.";
