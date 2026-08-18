@@ -576,10 +576,26 @@
    * Всё идемпотентно и выполняется на каждом scan() — Google и Яндекс
    * рендерят JS и читают итоговый DOM. */
 
+  /**
+   * ⚠️ САЙТ ОБЪЯВЛЯЕТ СЕБЯ ПО HTTP, А ЖИВЁТ ПО HTTPS. Тильда пишет http и в
+   * canonical, и в og:url, и в обе карты сайта, а http-адрес при этом отдаёт
+   * 200, а не редирект. Для поисковика это две одинаковые копии сайта, где
+   * страница показывает пальцем на ту, которую он сам считает неглавной, —
+   * отсюда письмо Search Console «Duplicate, Google chose different canonical
+   * than user».
+   *
+   * ⚠️ ЭТО ЗАПЛАТКА, А НЕ ЛЕЧЕНИЕ. Настоящее лечение — включить в Тильде
+   * принудительный переход на HTTPS: тогда http начнёт редиректить, а Тильда
+   * сама перепишет адреса. Здесь мы правим только то, что видно в отрендеренной
+   * странице.
+   */
   function seoCanonical() {
     const l = document.querySelector('link[rel="canonical"]');
     if (l && l.href && l.href.indexOf("http://") === 0)
       l.href = l.href.replace("http://", "https://");
+    const og = document.querySelector('meta[property="og:url"]');
+    if (og && og.content && og.content.indexOf("http://") === 0)
+      og.content = og.content.replace("http://", "https://");
   }
 
   function seoOrg() {
