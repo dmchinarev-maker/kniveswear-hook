@@ -791,7 +791,9 @@
     const items = [];
     cards.forEach(function (card, i) {
       const name = titleOf(card);
-      if (!name) return;
+      // ⚠️ Тестовый товар в машинную разметку не пускаем НИКОГДА, даже когда
+      // витрина показана по ?test=1: разметку читают краулеры, а не мы.
+      if (!name || isTestName(name)) return;
       const priceEl = card.querySelector(".t-store__card__price-value, .js-store-prod-price-value");
       const price = priceEl ? priceEl.textContent.replace(/\D/g, "") : "";
       const link = card.querySelector("a[href]");
@@ -874,9 +876,42 @@
     });
   }
 
+  /* ==== ТЕСТОВЫЙ ТОВАР: виден только по ссылке ====
+   *
+   * Прогон оплаты на живом сайте требует настоящего товара за копейки — но
+   * лежать на витрине рядом с сюртуком за 17 200 он не должен: покупатель
+   * увидит «Тестовый товар 10 ₽» и сделает свои выводы, а поисковик утащит
+   * его в выдачу.
+   *
+   * Поэтому карточка с названием, начинающимся на «тест», скрыта, пока в
+   * адресе нет ?test=1. Флаг запоминается на вкладку, чтобы он не слетал при
+   * переходе в корзину и обратно. Сама страница товара открывается по прямой
+   * ссылке всегда — прячем только витрину.
+   */
+  function testMode() {
+    try {
+      if (/[?&]test=1/.test(location.search)) sessionStorage.setItem("kwTest", "1");
+      return sessionStorage.getItem("kwTest") === "1";
+    } catch (e) {
+      return /[?&]test=1/.test(location.search);
+    }
+  }
+
+  const isTestName = (t) => /^\s*тест/i.test(t || "");
+
+  function hideTestCards() {
+    const show = testMode();
+    document.querySelectorAll(".t-store__card").forEach(function (card) {
+      if (!isTestName(titleOf(card))) return;
+      card.style.display = show ? "" : "none";
+      if (show) card.style.order = 99;   // в конец витрины, а не в середину
+    });
+  }
+
   function scan() {
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
+    hideTestCards();
     mountDropBar();
     mountStats();
     seoPatch();
