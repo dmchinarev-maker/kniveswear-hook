@@ -254,7 +254,9 @@
   /* ==== ПРАВОВОЙ ПОДВАЛ ==== */
   .kw-legal{border-top:1px solid #ececec;background:#fff;
     font-family:'TildaSans',Arial,sans-serif;color:#6a6a6a;font-size:12.5px;line-height:1.65;
-    padding:34px 20px 40px}
+    /* 76px снизу, а не 40: справа висит плавающая кнопка «Личный кабинет»
+       и накрывала последнюю строку со ссылками на документы */
+    padding:34px 20px 76px}
   .kw-legal-in{max-width:1160px;margin:0 auto;
     display:grid;grid-template-columns:1.15fr 1fr 1.5fr;gap:32px 40px}
   .kw-legal h4{margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:.16em;
