@@ -929,11 +929,28 @@
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
     hideTestCards();
+    fixTypos();
     mountLegal();
     mountDropBar();
     mountStats();
     seoPatch();
     sortCatalog();
+  }
+
+  /* ==== ОПЕЧАТКИ В ГОТОВЫХ БЛОКАХ ТИЛЬДЫ ====
+   * Правим ТОЛЬКО текстовые узлы и ТОЛЬКО точным совпадением: замена по
+   * innerHTML снесла бы вложенную вёрстку блока.
+   */
+  const TYPOS = [["Contract us", "Contact us"]];
+
+  function fixTypos() {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      for (const [from, to] of TYPOS)
+        if (n.nodeValue.indexOf(from) >= 0) hits.push([n, from, to]);
+    }
+    hits.forEach(function (h) { h[0].nodeValue = h[0].nodeValue.split(h[1]).join(h[2]); });
   }
 
   /* ==== ПРАВОВОЙ ПОДВАЛ: продавец, связь, порядок претензий ====
