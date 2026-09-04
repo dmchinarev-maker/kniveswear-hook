@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.8.4";
+  const VERSION = "1.8.5";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -64,6 +64,12 @@
 
   /* тильдовский значок SALE скрыт — редкость говорит сама за себя */
   .t-store__card__mark{display:none !important}
+  /* рубрики над каталогом (импорт CSV навесил категории, пустое поле их не снимает) */
+  .t-store__parts-switch-wrapper,.js-store-parts-switcher,.t-store__filter-wrapper{display:none !important}
+  /* короткое описание на карточке: в каталоге только имя и цена */
+  .t-store__card__descr{display:none !important}
+  /* «Нет в наличии» на карточке */
+  .t-store__card__price_soldout,.t-store__card__sold-out,.t-store__card__soldout,.kw-soldout-hidden{display:none !important}
 
   /* ==== ЛОР — ПОСЛЕДНИЙ РАЗДЕЛ ПАСПОРТА ====
      Карточка читается сверху вниз: характеристики → проверка → лор.
@@ -919,8 +925,12 @@
   /* ==== ПОРЯДОК СЕТКИ: топы → туники → остальное → пончо в хвост ====
    * Внутри групп исходный порядок Тильды сохраняется. Идемпотентно:
    * двигаем DOM только если порядок реально отличается. */
+  // Осенний дроп 2026 — первым, в этом порядке. Тильда в порядке каталога новые кладёт
+  // в хвост, а переставить их в редакторе можно только руками по одному.
+  const NEW_FIRST = ["тренч", "капюшоном", "сатин", "красным крестом", "серебристым крестом", "красные", "сюртук ii"];
   function gridPrio(title) {
     const t = title.toLowerCase();
+    for (let i = 0; i < NEW_FIRST.length; i++) if (t.indexOf(NEW_FIRST[i]) >= 0) return -20 + i;
     if (t.indexOf("топ") >= 0) return 0;
     if (t.indexOf("туника") >= 0) return 1;
     if (t.indexOf("пончо") >= 0) return 9;
@@ -975,9 +985,17 @@
     });
   }
 
+  function hideSoldOut() {
+    document.querySelectorAll(".t-store__card *").forEach(function (el) {
+      if (el.children.length) return;
+      const t = (el.textContent || "").trim().toLowerCase();
+      if (t === "нет в наличии" || t === "out of stock") el.classList.add("kw-soldout-hidden");
+    });
+  }
   function scan() {
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
+    hideSoldOut();
     hideTestCards();
     fixTypos();
     mountLegal();
