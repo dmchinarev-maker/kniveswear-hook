@@ -257,22 +257,17 @@
     .kw-card::before,.kw-card .t-store__card__imgwrapper::after{animation:none!important}
   }
 
-  /* ==== ПРАВОВОЙ ПОДВАЛ ==== */
-  .kw-legal{border-top:1px solid #ececec;background:#fff;
-    font-family:'TildaSans',Arial,sans-serif;color:#6a6a6a;font-size:12.5px;line-height:1.65;
-    /* 76px снизу, а не 40: справа висит плавающая кнопка «Личный кабинет»
-       и накрывала последнюю строку со ссылками на документы */
-    padding:34px 20px 76px}
-  .kw-legal-in{max-width:1160px;margin:0 auto;
-    display:grid;grid-template-columns:1.15fr 1fr 1.5fr;gap:32px 40px}
-  .kw-legal h4{margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:.16em;
+  /* ==== СТРАНИЦА «ДОКУМЕНТЫ»: реквизиты, связь, порядок претензий ==== */
+  .kw-legal{font-family:'TildaSans',Arial,sans-serif;color:#5f5f5f;font-size:13.5px;line-height:1.7}
+  .kw-legal-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:34px 48px}
+  .kw-legal h4{margin:0 0 12px;font-size:10px;font-weight:600;letter-spacing:.16em;
     text-transform:uppercase;color:#a0a0a0}
-  .kw-legal b{display:block;font-weight:600;color:#333;font-size:13px;margin-bottom:3px}
-  .kw-legal a{color:#6a6a6a;text-decoration:none;border-bottom:1px solid #e0e0e0}
+  .kw-legal b{display:block;font-weight:600;color:#222;font-size:15px;margin-bottom:5px}
+  .kw-legal a{color:#5f5f5f;text-decoration:none;border-bottom:1px solid #e0e0e0}
   .kw-legal a:hover{color:#111;border-bottom-color:#111}
-  .kw-legal .kw-legal-docs a{margin-right:14px;white-space:nowrap;display:inline-block}
-  .kw-legal .kw-legal-note{margin-top:9px}
-  @media (max-width:900px){.kw-legal-in{grid-template-columns:1fr;gap:26px}}`;
+  .kw-legal .kw-legal-note{margin-top:12px}
+  .kw-legal .kw-legal-docs a{display:block;width:fit-content;margin-bottom:8px}
+  @media (max-width:640px){.kw-legal-in{grid-template-columns:1fr;gap:28px}}`;
 
   function injectStyles() {
     if (document.getElementById("kw-hook-css")) return;
@@ -1021,21 +1016,22 @@
     hits.forEach(function (h) { h[0].nodeValue = h[0].nodeValue.split(h[1]).join(h[2]); });
   }
 
-  /* ==== ПРАВОВОЙ ПОДВАЛ: продавец, связь, порядок претензий ====
+  /* ==== ДОКУМЕНТЫ: продавец, связь, порядок претензий ====
    *
-   * ⚠️ ЗАЧЕМ ХУКОМ, А НЕ БЛОКОМ ТИЛЬДЫ. Данные о продавце и порядок подачи
-   * претензии обязаны быть НА САЙТЕ, а не на одной спрятанной странице:
-   * реквизиты лежали на /showmethemoney, куда ведёт единственная текстовая
-   * ссылка со страницы «Документы», а внутренние страницы вообще без меню —
-   * с оферты выйти можно только кнопкой «назад». Хук работает на КАЖДОЙ
-   * странице, поэтому подвал появляется везде разом.
+   * ⚠️ ЖИВЁТ НА ОДНОЙ СТРАНИЦЕ, А НЕ ПОЛОСОЙ ПОД КАЖДОЙ. Первая редакция
+   * вешала блок в подвал всего сайта — закон это закрывало, но каталог
+   * заканчивался простынёй реквизитов. Решение владельца: отдельный раздел
+   * меню, как «О нас» и «Доставка». Роль раздела играет существующая страница
+   * «Документы» — она уже в меню и ровно про это.
+   *
+   * ⚠️ СТАРЫЙ ТЕКСТ СТРАНИЦЫ ЗАМЕЩАЕМ, А НЕ ДОПОЛНЯЕМ: там ровно те же
+   * ссылки и контакты, и рядом они читались бы как два разных ответа на один
+   * вопрос.
    *
    * ⚠️ Порядок ответа на претензию — это ТРЕБОВАНИЕ, а не вежливость:
-   * отвечать нужно ТЕМ ЖЕ способом, каким претензия пришла, поэтому в тексте
-   * прямо просим указать способ ответа.
-   *
-   * ⚠️ Сроки названы по закону и разные: денежное требование — 10 дней
-   * (ст. 22), замена товара — 7 дней (ст. 21). Одним числом их писать нельзя.
+   * отвечать нужно ТЕМ ЖЕ способом, каким она пришла, поэтому прямо просим
+   * указать способ ответа. Сроки названы раздельно: деньги — 10 дней
+   * (ст. 22), замена — 7 дней (ст. 21). Одним числом их писать нельзя.
    */
   const SELLER = {
     name: "ИП Чинарев Дмитрий Алексеевич",
@@ -1048,38 +1044,45 @@
     tg: "kniveswear",
   };
 
+  const LEGAL_HTML =
+    '<div class="kw-legal-in">' +
+      "<div><h4>Продавец</h4>" +
+        "<b>" + SELLER.name + "</b>" +
+        "ОГРНИП " + SELLER.ogrnip + "<br>ИНН " + SELLER.inn + "<br>" +
+        SELLER.address +
+      "</div>" +
+      "<div><h4>Связь</h4>" +
+        '<a href="mailto:' + SELLER.email + '">' + SELLER.email + "</a><br>" +
+        '<a href="tel:' + SELLER.phoneHref + '">' + SELLER.phone + "</a><br>" +
+        '<a href="https://t.me/' + SELLER.tg + '" rel="noopener">Telegram @' + SELLER.tg + "</a>" +
+      "</div>" +
+      "<div><h4>Претензии и возврат</h4>" +
+        "Претензию можно подать в электронном виде: письмом на " +
+        '<a href="mailto:' + SELLER.email + '">' + SELLER.email + "</a> или в Telegram " +
+        '<a href="https://t.me/' + SELLER.tg + '" rel="noopener">@' + SELLER.tg + "</a>. " +
+        "Укажите номер заказа, суть требования и способ ответа — ответим тем же способом, " +
+        "которым пришла претензия." +
+        '<div class="kw-legal-note">Сроки по Закону «О защите прав потребителей»: ' +
+        "возврат уплаченной суммы — 10 дней, замена товара — 7 дней.</div>" +
+      "</div>" +
+      '<div><h4>Документы</h4><div class="kw-legal-docs">' +
+        '<a href="/oferta">Договор оферты</a>' +
+        '<a href="/agreement">Пользовательское соглашение</a>' +
+        '<a href="/iddqd">Политика возвратов</a>' +
+        '<a href="/showmethemoney">Банковские реквизиты</a>' +
+      "</div></div>" +
+    "</div>";
+
   function mountLegal() {
+    if (!/^\/docs\/?$/.test(location.pathname)) return;
     if (document.getElementById("kw-legal")) return;
-    const box = document.createElement("footer");
-    box.id = "kw-legal";
-    box.className = "kw-legal";
-    box.innerHTML =
-      '<div class="kw-legal-in">' +
-        "<div><h4>Продавец</h4>" +
-          "<b>" + SELLER.name + "</b>" +
-          "ОГРНИП " + SELLER.ogrnip + " · ИНН " + SELLER.inn + "<br>" +
-          SELLER.address +
-        "</div>" +
-        "<div><h4>Связь</h4>" +
-          '<a href="mailto:' + SELLER.email + '">' + SELLER.email + "</a><br>" +
-          '<a href="tel:' + SELLER.phoneHref + '">' + SELLER.phone + "</a><br>" +
-          '<a href="https://t.me/' + SELLER.tg + '" rel="noopener">Telegram @' + SELLER.tg + "</a>" +
-        "</div>" +
-        "<div><h4>Претензии и возврат</h4>" +
-          "Претензию можно подать в электронном виде: письмом на " +
-          '<a href="mailto:' + SELLER.email + '">' + SELLER.email + "</a> или в Telegram " +
-          '<a href="https://t.me/' + SELLER.tg + '" rel="noopener">@' + SELLER.tg + "</a>. " +
-          "Укажите номер заказа, суть требования и способ ответа — ответим тем же способом, " +
-          "которым пришла претензия." +
-          '<div class="kw-legal-note">Сроки по Закону «О защите прав потребителей»: ' +
-          "возврат уплаченной суммы — 10 дней, замена товара — 7 дней.</div>" +
-          '<div class="kw-legal-note kw-legal-docs">' +
-            '<a href="/oferta">Оферта</a><a href="/agreement">Пользовательское соглашение</a>' +
-            '<a href="/iddqd">Возвраты</a><a href="/showmethemoney">Реквизиты</a>' +
-          "</div>" +
-        "</div>" +
-      "</div>";
-    document.body.appendChild(box);
+    // Текстовый блок страницы «Документы» — тот самый список ссылок и контактов.
+    const host = document.querySelector("#rec1041210936 .t-text") ||
+                 document.querySelector(".t-rec .t-text");
+    if (!host) return;
+    host.id = "kw-legal";
+    host.classList.add("kw-legal");
+    host.innerHTML = LEGAL_HTML;
   }
 
   /* ==== таймер дропа: полоса перед блоком каталога ==== */
