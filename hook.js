@@ -709,16 +709,25 @@
   const MAT_HINT = /^(материал|состав|ткань|сшит|сшито|сшиты|сшит[аи]я|выполнен)/i;
 
   function materialFrom(text) {
-    const hits = [];
-    text.split(/\n+/).forEach(function (line) {
-      const s = line.trim().split(/\.\s|\.$/)[0].trim();
-      // 200 символов, а не 120: «Элегантные брюки… из лёгкого итальянского
-      // вельвета… с геометричным принтом» — состав в конце длинной фразы.
-      if (s.length > 4 && s.length <= 200 && (FIBRES.test(s) || MAT_HINT.test(s)) &&
-          hits.indexOf(s) < 0)
-        hits.push(s);
-    });
-    return hits.slice(0, 3).join(". ");
+    // ⚠️ СНАЧАЛА ИЩЕМ ЯВНЫЙ СОСТАВ, И ТОЛЬКО ПОТОМ ГАДАЕМ ПО ВОЛОКНАМ.
+    // Старая версия склеивала три первых предложения с упоминанием ткани, и в поле
+    // material у пальто уезжало 230 символов прозы про капюшон и ветер. Схема ждёт
+    // здесь состав, а не пересказ карточки, поэтому приоритет такой:
+    //   1) строка вида «Состав: шерсть 65%, шёлк 5%…» — берём как есть;
+    //   2) фрагмент с процентами — «шерсть 65%, шёлк 5%, полиэстер 30%»;
+    //   3) одно короткое предложение про ткань, как запасной вариант.
+    const lines = text.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^(?:материал|состав)\s*[:—-]\s*(.+)$/i);
+      if (m && m[1].length <= 200) return m[1].replace(/\.$/, "").trim();
+    }
+    var pct = text.match(/([А-Яа-яЁё][^.\n]{0,80}?\d{1,3}\s?%(?:[^.\n]{0,80}?\d{1,3}\s?%)*)/);
+    if (pct && FIBRES.test(pct[1])) return pct[1].replace(/^[^А-Яа-яЁё]+/, "").trim();
+    for (var j = 0; j < lines.length; j++) {
+      var s = lines[j].split(/\.\s|\.$/)[0].trim();
+      if (s.length > 4 && s.length <= 120 && (FIBRES.test(s) || MAT_HINT.test(s))) return s;
+    }
+    return "";
   }
 
   function careFrom(text) {
@@ -734,7 +743,7 @@
     const out = [];
     info.querySelectorAll(".js-product-edition-option").forEach(function (o) {
       const nameEl = o.querySelector(".js-product-edition-option-name");
-      const label = nameEl ? nameEl.textContent.trim().replace(/:$/, "") : "";
+      let label = nameEl ? nameEl.textContent.trim().replace(/:$/, "") : "";
       const vals = [];
       // Тильда рисует варианты либо селектом, либо кнопками — берём оба.
       o.querySelectorAll("select option, .js-product-edition-option-item, .t-product__option-item")
@@ -742,9 +751,31 @@
           const t = (v.textContent || "").trim();
           if (t && vals.indexOf(t) < 0) vals.push(t);
         });
+      // ⚠️ БЕЗ ПОДПИСИ ВАРИАНТЫ ТЕРЯЛИСЬ ЦЕЛИКОМ. На карточке пальто селект с размерами
+      // есть, а элемента с названием опции рядом нет, и старая проверка label выбрасывала
+      // готовый список 48…56. Если подписи нет, но значения похожи на размеры, ставим её сами.
+      if (!label && vals.length && vals.every(function (v) { return /^(\d{2}|X{0,2}[SMLXL]{1,3})$/i.test(v); }))
+        label = "Размер";
       if (label && vals.length) out.push({ label: label, values: vals });
     });
     return out;
+  }
+
+  // Все кадры галереи, а не одна og:image: схема принимает массив, и поисковики
+  // показывают карусель только когда картинок несколько.
+  function galleryImages() {
+    const urls = [];
+    document.querySelectorAll(".t-slds__bgimg, .t-slds__img, .t-store__prod-popup__slider img")
+      .forEach(function (el) {
+        let u = el.getAttribute("data-original") || el.getAttribute("src") || "";
+        if (!u) {
+          const bg = (el.style && el.style.backgroundImage) || "";
+          const m = bg.match(/url\(["']?(.+?)["']?\)/);
+          if (m) u = m[1];
+        }
+        if (u && u.indexOf("http") === 0 && urls.indexOf(u) < 0) urls.push(u);
+      });
+    return urls.slice(0, 12);
   }
 
   function seoProduct() {
@@ -754,7 +785,10 @@
     const name = nameEl ? nameEl.textContent.trim() : "";
     if (!name) return;
     const old = document.getElementById("kw-ld-product");
-    if (old && old.dataset.for === name) return;
+    // ⚠️ ПЕРЕСОБИРАЕМ, ПОКА РАЗМЕТКА НЕПОЛНАЯ. Первый проход часто случается до того, как
+    // Тильда дорисовала селект размеров и строку SKU, а прежняя проверка «тот же товар,
+    // выходим» замораживала обрезанный вариант навсегда: у пальто так и висело без размеров.
+    if (old && old.dataset.for === name && old.dataset.full === "1") return;
     if (old) old.remove();
 
     const priceEl = info.querySelector(".js-product-price, .t-store__prod-popup__price-value");
@@ -787,7 +821,9 @@
       }
     };
     if (price) ld.offers.price = price;
-    if (img) ld.image = [img];
+    const gal = galleryImages();
+    if (gal.length) ld.image = gal;
+    else if (img) ld.image = [img];
 
     // innerText, а не textContent: разбор состава опирается на абзацы, а
     // textContent склеивает их в одну строку.
@@ -812,6 +848,7 @@
     s.type = "application/ld+json";
     s.id = "kw-ld-product";
     s.dataset.for = name;
+    s.dataset.full = (ld.size && ld.sku && ld.offers.price) ? "1" : "0";
     s.textContent = JSON.stringify(ld);
     document.head.appendChild(s);
 
