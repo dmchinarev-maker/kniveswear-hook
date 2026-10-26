@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.8.6";
+  const VERSION = "1.8.7";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -954,13 +954,16 @@
     seoAlts();
   }
 
-  /* ==== ПОРЯДОК СЕТКИ: топы → туники → остальное → пончо в хвост ====
-   * Внутри групп исходный порядок Тильды сохраняется. Идемпотентно:
-   * двигаем DOM только если порядок реально отличается. */
-  // Осенний дроп 2026 — первым, в этом порядке. Тильда в порядке каталога новые кладёт
-  // в хвост, а переставить их в редакторе можно только руками по одному.
+  /* ==== ПОРЯДОК СЕТКИ: выбранные товары → дроп → остальные группы ====
+   * Внутри групп исходный порядок Тильды сохраняется. */
+  // ID родительских товаров: Knives32 → Knives34 → Knives35.
+  // У карточки с размерами data-product-lid — ID варианта, а не товара.
+  const FEATURED_PRODUCTS = ["240284870733", "721613613783", "180498318383"];
+  // Осенний дроп 2026 — после выбранных товаров, в этом порядке.
   const NEW_FIRST = ["тренч", "капюшоном", "сатин", "красным крестом", "серебристым крестом", "красные", "сюртук ii"];
-  function gridPrio(title) {
+  function gridPrio(title, productId) {
+    const featuredIndex = FEATURED_PRODUCTS.indexOf(productId);
+    if (featuredIndex >= 0) return -30 + featuredIndex;
     const t = title.toLowerCase();
     for (let i = 0; i < NEW_FIRST.length; i++) if (t.indexOf(NEW_FIRST[i]) >= 0) return -20 + i;
     if (t.indexOf("топ") >= 0) return 0;
@@ -977,7 +980,8 @@
       [].slice.call(list.children).forEach(function (ch) {
         if (ch.classList.contains("t-store__card")) {
           const t = titleOf(ch);
-          if (t) ch.style.order = gridPrio(t);
+          const productId = ch.getAttribute("data-product-gen-uid") || ch.getAttribute("data-product-lid");
+          if (t) ch.style.order = gridPrio(t, productId);
         } else {
           ch.style.order = 50;   // сепараторы и прочее — в хвост, они пустые
         }
