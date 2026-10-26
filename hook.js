@@ -8,7 +8,7 @@
  */
 (() => {
   "use strict";
-  const VERSION = "1.8.7";
+  const VERSION = "1.8.8";
 
   /* ==== ДРОП: таймер над каталогом ==== */
   const DROP = {
@@ -954,22 +954,18 @@
     seoAlts();
   }
 
-  /* ==== ПОРЯДОК СЕТКИ: выбранные товары → дроп → остальные группы ====
+  /* ==== ПОРЯДОК СЕТКИ: пальто → тренчи → сюртуки → свитеры → брюки → рубашки ====
    * Внутри групп исходный порядок Тильды сохраняется. */
-  // ID родительских товаров: Knives32 → Knives34 → Knives35.
-  // У карточки с размерами data-product-lid — ID варианта, а не товара.
-  const FEATURED_PRODUCTS = ["240284870733", "721613613783", "180498318383"];
-  // Осенний дроп 2026 — после выбранных товаров, в этом порядке.
-  const NEW_FIRST = ["тренч", "капюшоном", "сатин", "красным крестом", "серебристым крестом", "красные", "сюртук ii"];
-  function gridPrio(title, productId) {
-    const featuredIndex = FEATURED_PRODUCTS.indexOf(productId);
-    if (featuredIndex >= 0) return -30 + featuredIndex;
+  const CATALOG_GROUPS = [/пальто/i, /тренч/i, /сюртук/i, /свитер/i, /брюки|штаны/i, /рубашк/i];
+  function gridPrio(title) {
+    for (let i = 0; i < CATALOG_GROUPS.length; i++) {
+      if (CATALOG_GROUPS[i].test(title)) return i;
+    }
     const t = title.toLowerCase();
-    for (let i = 0; i < NEW_FIRST.length; i++) if (t.indexOf(NEW_FIRST[i]) >= 0) return -20 + i;
-    if (t.indexOf("топ") >= 0) return 0;
-    if (t.indexOf("туника") >= 0) return 1;
+    if (t.indexOf("топ") >= 0) return 6;
+    if (t.indexOf("туника") >= 0) return 7;
     if (t.indexOf("пончо") >= 0) return 9;
-    return 5;
+    return 8;
   }
 
   function sortCatalog() {
@@ -980,8 +976,7 @@
       [].slice.call(list.children).forEach(function (ch) {
         if (ch.classList.contains("t-store__card")) {
           const t = titleOf(ch);
-          const productId = ch.getAttribute("data-product-gen-uid") || ch.getAttribute("data-product-lid");
-          if (t) ch.style.order = gridPrio(t, productId);
+          if (t) ch.style.order = gridPrio(t);
         } else {
           ch.style.order = 50;   // сепараторы и прочее — в хвост, они пустые
         }
