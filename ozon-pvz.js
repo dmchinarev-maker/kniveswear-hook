@@ -105,6 +105,7 @@
   // пункта, иначе заказ в Тильде придёт вообще без адреса доставки. Заодно
   // снимаем обязательность — скрытое обязательное поле не даст отправить форму.
   function hideAddress(form) {
+    if (form.querySelector('.t-radio__wrapper-delivery[data-delivery-services="y"], #customdelivery')) return;
     var addr = findAddress(form);
     if (!addr) return;
     addr.required = false;
@@ -230,7 +231,7 @@
 
   /* ---------- монтирование в корзину ---------- */
   P.mount = function (form) {
-    if (!form || form.querySelector(".kwp")) return;
+    if (!form || form.querySelector('.t-radio__wrapper-delivery[data-delivery-services="y"], #customdelivery') || form.querySelector(".kwp")) return;
     styles();
     var box = document.createElement("div");
     box.className = "kwp";
@@ -257,7 +258,10 @@
     // правит поля), позже — некуда, страница уже уходит на оплату.
     if (!form.__kwDraftHooked) {
       form.__kwDraftHooked = true;
-      form.addEventListener("submit", function () { sendDraft(form, chosen); });
+      form.addEventListener("submit", function () {
+        if (form.querySelector('.t-radio__wrapper-delivery[data-delivery-services="y"], #customdelivery')) return;
+        sendDraft(form, chosen);
+      });
     }
   };
 })();

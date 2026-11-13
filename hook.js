@@ -1154,7 +1154,7 @@
     const s = document.createElement("script");
     s.id = "kw-loyalty-js";
     s.defer = true;
-    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/loyalty.js";
+    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/loyalty.js?v=20261113";
     document.head.appendChild(s);
   }
 

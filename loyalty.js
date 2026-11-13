@@ -152,6 +152,38 @@
     if (filled) console.log("[loyalty] автозаполнено полей корзины: " + filled);
     return filled;
   }
+  // Keep the promo field identifiable even when the Tilda block has no title.
+  function labelPromo(form) {
+    var group = form.querySelector('.t-input-group_pc');
+    if (!group) return;
+    var input = group.querySelector('input:not([type="hidden"])');
+    if (!input) return;
+    var title = group.querySelector('.t-input-title');
+    if (!title) {
+      title = document.createElement('label');
+      title.className = 't-input-title t-descr t-descr_md';
+      group.insertBefore(title, group.firstChild);
+    }
+    if (!title.textContent.trim()) title.textContent = 'Промокод';
+    if (input.id && title.htmlFor !== input.id) title.htmlFor = input.id;
+    if (!input.placeholder) input.placeholder = 'Введите промокод';
+    if (input.getAttribute('aria-label') !== 'Промокод') input.setAttribute('aria-label', 'Промокод');
+    var button = group.querySelector('.t-inputpromocode__btn .t-btnflex__text');
+    if (button && /^(Activate|Apply)$/i.test(button.textContent.trim())) button.textContent = 'Применить';
+  }
+
+  function usesTildaDelivery(form) {
+    return !!form.querySelector('.t-radio__wrapper-delivery[data-delivery-services="y"], #customdelivery');
+  }
+
+  function removeLegacyDelivery(form) {
+    var box = form.querySelector('.kwp');
+    if (box) box.remove();
+    // Never send the previously selected Ozon point with a native delivery order.
+    var point = form.querySelector('input[name="ozon_point"]');
+    if (point) point.remove();
+  }
+
   /* ВЫБОР ПВЗ OZON — грузим модуль по требованию, когда корзина открылась.
      Не зависит от входа в ЛК: доставку выбирает любой покупатель. */
   function mountPvz() {
@@ -161,13 +193,16 @@
     var form = null;
     var forms = document.querySelectorAll(".t706 form, .t706__cartwin-content form, .t706__form");
     Array.prototype.forEach.call(forms, function (f) { if (!form && f.offsetParent) form = f; });
-    if (!form || form.querySelector(".kwp")) return;
+    if (!form) return;
+    labelPromo(form);
+    if (usesTildaDelivery(form)) { removeLegacyDelivery(form); return; }
+    if (form.querySelector(".kwp")) return;
 
     if (window.KWL_PVZ) { window.KWL_PVZ.mount(form); return; }
     if (window.__kwPvzLoading) return;
     window.__kwPvzLoading = true;
     var s = document.createElement("script");
-    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/ozon-pvz.js";
+    s.src = "https://dmchinarev-maker.github.io/kniveswear-hook/ozon-pvz.js?v=20261113";
     s.onload = function () { if (window.KWL_PVZ) window.KWL_PVZ.mount(form); };
     document.head.appendChild(s);
   }
