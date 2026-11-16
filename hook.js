@@ -47,6 +47,9 @@
   /* убрана промо-плашка «-15% по промокоду firstblood» (Tilda-блок rec1661147731) */
   #rec1661147731{display:none!important}
 
+  /* Игровой промобаннер снят с сайта. */
+  #rec5692154101{display:none!important}
+
   /* убраны ЗАЧЁРКНУТЫЕ (старые) цены — на карточках и на странице товара */
   .t-store__card__price_old,
   .t-store__prod-popup__price_old,
@@ -1043,6 +1046,7 @@
     });
   }
   function scan() {
+    document.getElementById("rec5692154101")?.remove();
     document.querySelectorAll(".t-store__card:not([data-kw-done])")
       .forEach(decorate);
     hideSoldOut();
