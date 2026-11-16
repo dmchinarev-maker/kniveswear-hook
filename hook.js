@@ -970,10 +970,13 @@
     seoAlts();
   }
 
-  /* ==== ПОРЯДОК СЕТКИ: пальто → тренчи → сюртуки → свитеры → брюки → рубашки ====
+  /* ==== ПОРЯДОК СЕТКИ: дроп II → пальто → тренчи → сюртуки → свитеры → брюки → рубашки ====
    * Внутри групп исходный порядок Тильды сохраняется. */
   const CATALOG_GROUPS = [/пальто/i, /тренч/i, /сюртук/i, /свитер/i, /брюки|штаны/i, /рубашк/i];
   function gridPrio(title) {
+    // Анонсы нового дропа закреплены наверху независимо от наличия.
+    if (/\bKnives37\b/i.test(title)) return -2;
+    if (/\bKnives38\b/i.test(title)) return -1;
     for (let i = 0; i < CATALOG_GROUPS.length; i++) {
       if (CATALOG_GROUPS[i].test(title)) return i;
     }
